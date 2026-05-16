@@ -1,0 +1,315 @@
+package com.example.a43_kltn_ttfood.navigation
+
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.example.a43_kltn_ttfood.ui.screens.auth.*
+import com.example.a43_kltn_ttfood.ui.screens.category.CategoryScreen
+import com.example.a43_kltn_ttfood.ui.screens.food.FoodDetailScreen
+import com.example.a43_kltn_ttfood.ui.screens.home.HomeScreen
+import com.example.a43_kltn_ttfood.ui.screens.notifications.NotificationsScreen
+import com.example.a43_kltn_ttfood.ui.screens.restaurant.RestaurantDetailScreen
+import com.example.a43_kltn_ttfood.ui.screens.search.SearchScreen
+import com.example.a43_kltn_ttfood.ui.screens.cart.CartScreen
+import com.example.a43_kltn_ttfood.ui.screens.checkout.CheckoutScreen
+import com.example.a43_kltn_ttfood.ui.screens.checkout.OrderSuccessScreen
+import com.example.a43_kltn_ttfood.ui.screens.tracking.OrderTrackingScreen
+import com.example.a43_kltn_ttfood.ui.screens.profile.*
+
+@Composable
+fun TTFoodNavGraph(navController: NavHostController) {
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Splash.route,
+        enterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { fullWidth -> fullWidth },
+                animationSpec = tween(300)
+            ) + fadeIn(animationSpec = tween(300))
+        },
+        exitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { fullWidth -> -fullWidth },
+                animationSpec = tween(300)
+            ) + fadeOut(animationSpec = tween(300))
+        },
+        popEnterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { fullWidth -> -fullWidth },
+                animationSpec = tween(300)
+            ) + fadeIn(animationSpec = tween(300))
+        },
+        popExitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { fullWidth -> fullWidth },
+                animationSpec = tween(300)
+            ) + fadeOut(animationSpec = tween(300))
+        }
+    ) {
+        // Splash Screen
+        composable(
+            route = Screen.Splash.route,
+            enterTransition = { fadeIn(animationSpec = tween(500)) },
+            exitTransition = { fadeOut(animationSpec = tween(500)) }
+        ) {
+            SplashScreen(
+                onNavigateToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Onboarding Screen
+        composable(route = Screen.Onboarding.route) {
+            OnboardingScreen(
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Login Screen
+        composable(route = Screen.Login.route) {
+            LoginScreen(
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                },
+                onNavigateToForgotPassword = {
+                    navController.navigate(Screen.ResetPassword.route)
+                },
+                onLoginSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Register Screen
+        composable(route = Screen.Register.route) {
+            RegisterScreen(
+                onNavigateToOtp = { phoneOrEmail ->
+                    navController.navigate(Screen.OtpVerification.createRoute(phoneOrEmail))
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // OTP Verification
+        composable(
+            route = Screen.OtpVerification.route,
+            arguments = listOf(
+                navArgument("phoneOrEmail") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val phoneOrEmail = backStackEntry.arguments?.getString("phoneOrEmail") ?: ""
+            OtpVerificationScreen(
+                phoneOrEmail = phoneOrEmail,
+                onVerificationSuccess = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Reset Password
+        composable(route = Screen.ResetPassword.route) {
+            ResetPasswordScreen(
+                onResetSuccess = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.ResetPassword.route) { inclusive = true }
+                    }
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Home Screen
+        composable(route = Screen.Home.route) {
+            HomeScreen(
+                onNavigateToSearch = { navController.navigate(Screen.Search.route) },
+                onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) },
+                onNavigateToRestaurant = { restaurantId -> 
+                    navController.navigate(Screen.RestaurantDetail.createRoute(restaurantId)) 
+                },
+                onNavigateToFood = { foodId -> 
+                    navController.navigate(Screen.FoodDetail.createRoute(foodId)) 
+                },
+                onNavigateToCategory = { categoryId -> 
+                    navController.navigate(Screen.Category.createRoute(categoryId)) 
+                },
+                onNavigateToCart = { navController.navigate(Screen.Cart.route) },
+                onNavigateToProfile = { navController.navigate(Screen.ProfileDashboard.route) }
+            )
+        }
+
+        // Search Screen
+        composable(route = Screen.Search.route) {
+            SearchScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFood = { foodId -> 
+                    navController.navigate(Screen.FoodDetail.createRoute(foodId)) 
+                },
+                onNavigateToRestaurant = { restaurantId -> 
+                    navController.navigate(Screen.RestaurantDetail.createRoute(restaurantId)) 
+                }
+            )
+        }
+
+        // Notifications Screen
+        composable(route = Screen.Notifications.route) {
+            NotificationsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Restaurant Detail
+        composable(
+            route = Screen.RestaurantDetail.route,
+            arguments = listOf(navArgument("restaurantId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getInt("restaurantId") ?: 0
+            RestaurantDetailScreen(
+                restaurantId = restaurantId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFood = { foodId -> 
+                    navController.navigate(Screen.FoodDetail.createRoute(foodId)) 
+                }
+            )
+        }
+
+        // Food Detail
+        composable(
+            route = Screen.FoodDetail.route,
+            arguments = listOf(navArgument("foodId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val foodId = backStackEntry.arguments?.getInt("foodId") ?: 0
+            FoodDetailScreen(
+                foodId = foodId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Category Screen
+        composable(
+            route = Screen.Category.route,
+            arguments = listOf(navArgument("categoryId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 0
+            CategoryScreen(
+                categoryId = categoryId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFood = { foodId -> 
+                    navController.navigate(Screen.FoodDetail.createRoute(foodId)) 
+                }
+            )
+        }
+
+        // Cart Screen
+        composable(route = Screen.Cart.route) {
+            CartScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCheckout = { navController.navigate(Screen.Checkout.route) }
+            )
+        }
+
+        // Checkout Screen
+        composable(route = Screen.Checkout.route) {
+            CheckoutScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSuccess = { 
+                    navController.navigate(Screen.OrderSuccess.route) {
+                        popUpTo(Screen.Cart.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Order Success Screen
+        composable(route = Screen.OrderSuccess.route) {
+            OrderSuccessScreen(
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onNavigateToTracking = {
+                    navController.navigate(Screen.OrderTracking.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                }
+            )
+        }
+
+        // Order Tracking Screen
+        composable(route = Screen.OrderTracking.route) {
+            OrderTrackingScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Profile Dashboard Screen
+        composable(route = Screen.ProfileDashboard.route) {
+            ProfileDashboardScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
+                onNavigateToOrderHistory = { navController.navigate(Screen.OrderHistory.route) },
+                onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onLogout = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Edit Profile Screen
+        composable(route = Screen.EditProfile.route) {
+            EditProfileScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        // Order History Screen
+        composable(route = Screen.OrderHistory.route) {
+            OrderHistoryScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        // Favorites Screen
+        composable(route = Screen.Favorites.route) {
+            FavoritesScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        // Settings Screen
+        composable(route = Screen.Settings.route) {
+            SettingsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+    }
+}
+
