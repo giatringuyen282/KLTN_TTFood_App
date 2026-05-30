@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "917818130105",
+    "project_id": "tt-food-5f570",
+    "storage_bucket": "tt-food-5f570.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917818130105:android:78cb7e6fbc5891ac13a568",
+        "android_client_info": {
+          "package_name": "com.example.a43_kltn_ttfood"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLRzQlOsg1I3G-4jWKoB4j05a8SSfCOIk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
