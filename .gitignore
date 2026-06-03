@@ -13,5 +13,3 @@
 .externalNativeBuild
 .cxx
 local.properties
-# Firebase sensitive config - mỗi người tự thêm file này vào máy
-app/google-services.json
