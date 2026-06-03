@@ -24,7 +24,8 @@ data class FoodItem(
     val restaurant: String,
     val price: String,
     val rating: Float,
-    val bgColor: Color = Color(0xFFFFF3E0)
+    val bgColor: Color = Color(0xFFFFF3E0),
+    val imageUrl: String = ""  // URL ảnh thực tế từ Firebase Storage
 )
 
 data class Restaurant(

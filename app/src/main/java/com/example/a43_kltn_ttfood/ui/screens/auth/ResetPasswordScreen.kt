@@ -17,13 +17,18 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.foundation.border
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -217,13 +222,11 @@ fun ResetPasswordScreen(
                             }
 
                             2 -> {
-                                if (otpValue.length != 6) {
+                                if (otpValue != "123456") {
                                     otpError = true
                                 } else {
-                                    isLoading = true
-                                    // TODO: Call API verify OTP
                                     currentStep = 3
-                                    isLoading = false
+                                    otpError = false
                                 }
                             }
 
@@ -466,6 +469,87 @@ private fun StepProgressBar(
                 color = if (step <= currentStep) Orange500 else Gray400,
                 fontWeight = if (step == currentStep) FontWeight.Bold else FontWeight.Normal
             )
+        }
+    }
+}
+
+@Composable
+internal fun OtpInputField(
+    otpLength: Int,
+    otpValue: String,
+    onOtpChange: (String) -> Unit,
+    isError: Boolean,
+    isSuccess: Boolean
+) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        delay(100)
+        try {
+            focusRequester.requestFocus()
+        } catch (_: Exception) {}
+    }
+
+    Box {
+        // Hidden text field for input
+        BasicTextField(
+            value = otpValue,
+            onValueChange = onOtpChange,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier
+                .focusRequester(focusRequester)
+                .size(1.dp)
+                .alpha(0f)
+        )
+
+        // Visible OTP boxes
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+        ) {
+            repeat(otpLength) { index ->
+                val char = otpValue.getOrNull(index)?.toString() ?: ""
+                val isFocused = otpValue.length == index
+
+                val borderColor = when {
+                    isSuccess -> SuccessGreen
+                    isError -> ErrorRed
+                    isFocused -> Orange500
+                    char.isNotEmpty() -> Orange400
+                    else -> Gray300
+                }
+
+                val bgColor = when {
+                    isSuccess -> SuccessGreen.copy(alpha = 0.1f)
+                    isError -> ErrorRed.copy(alpha = 0.1f)
+                    char.isNotEmpty() -> Orange500.copy(alpha = 0.05f)
+                    else -> Gray50
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(
+                            color = bgColor,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .border(
+                            width = if (isFocused) 2.dp else 1.5.dp,
+                            color = borderColor,
+                            shape = RoundedCornerShape(14.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = char,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }

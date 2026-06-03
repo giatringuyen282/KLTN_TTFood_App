@@ -448,7 +448,16 @@ fun FoodItemHorizontalCard(food: FoodItem, onClick: () -> Unit) {
                     .background(food.bgColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = food.emoji, fontSize = 48.sp)
+                if (food.imageUrl.isNotBlank()) {
+                    coil.compose.AsyncImage(
+                        model = food.imageUrl,
+                        contentDescription = food.name,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(text = food.emoji, fontSize = 48.sp)
+                }
             }
             Spacer(Modifier.height(12.dp))
             
@@ -514,7 +523,16 @@ fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: () -> Unit) {
                 .background(food.bgColor),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = food.emoji, fontSize = 100.sp)
+            if (food.imageUrl.isNotBlank()) {
+                coil.compose.AsyncImage(
+                    model = food.imageUrl,
+                    contentDescription = food.name,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(text = food.emoji, fontSize = 100.sp)
+            }
         }
         
         Column(modifier = Modifier.padding(24.dp)) {

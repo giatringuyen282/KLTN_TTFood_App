@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.example.a43_kltn_ttfood.data.model.*
 import com.example.a43_kltn_ttfood.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
@@ -61,7 +62,23 @@ fun HomeScreen(
     onNavigateToCart: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {}
 ) {
-    var userName by remember { mutableStateOf("Nguyễn Văn A") }
+    val authRepo = remember { com.example.a43_kltn_ttfood.data.repository.AuthRepository() }
+    
+    // Initialize repositories
+    val categoryRepo = remember { com.example.a43_kltn_ttfood.data.repository.CategoryRepository() }
+    val foodRepo = remember { com.example.a43_kltn_ttfood.data.repository.FoodRepository() }
+    val restaurantRepo = remember { com.example.a43_kltn_ttfood.data.repository.RestaurantRepository() }
+    val dbSeeder = remember { com.example.a43_kltn_ttfood.data.util.DatabaseSeeder }
+
+    // State holders for dynamic data
+    var categories by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.FoodCategory>>(emptyList()) }
+    var foods by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.FoodItem>>(emptyList()) }
+    var restaurants by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.Restaurant>>(emptyList()) }
+
+    var userProfile by remember { mutableStateOf<com.example.a43_kltn_ttfood.data.model.User?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     var address by remember { mutableStateOf("123 Nguyễn Văn Cừ, Q.5, TP.HCM") }
     
     var showNameDialog by remember { mutableStateOf(false) }
@@ -71,6 +88,41 @@ fun HomeScreen(
 
     var selectedCategory by remember { mutableIntStateOf(0) }
     var isAILoading by remember { mutableStateOf(true) }
+
+    // Load data from Firestore
+    LaunchedEffect(Unit) {
+        // Seed if needed
+        dbSeeder.seedIfNeeded()
+        // Collect categories
+        categoryRepo.getAllCategories().collect { categories = it }
+    }
+    LaunchedEffect(Unit) {
+        foodRepo.getAllFoodItems().collect { foods = it }
+    }
+    LaunchedEffect(Unit) {
+        restaurantRepo.getAllRestaurants().collect { modelList ->
+            restaurants = modelList.map { model ->
+                val sampleMatch = sampleRestaurants.find {
+                    it.name.equals(model.name, ignoreCase = true)
+                }
+                Restaurant(
+                    id = sampleMatch?.id ?: (model.id.toIntOrNull() ?: model.name.hashCode()),
+                    emoji = model.emoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
+                    name = model.name,
+                    rating = model.rating.toFloat(),
+                    distance = sampleMatch?.distance ?: "1.2 km",
+                    deliveryTime = sampleMatch?.deliveryTime ?: "15-20 min",
+                    badge = if (model.isOpen) null else "Đóng cửa",
+                    colorStart = sampleMatch?.colorStart ?: Orange500,
+                    colorEnd = sampleMatch?.colorEnd ?: Orange500
+                )
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        userProfile = authRepo.getCurrentUserProfile()
+    }
 
     // Simulate AI loading
     LaunchedEffect(Unit) {
@@ -99,14 +151,14 @@ fun HomeScreen(
             item {
                 HomeHeader(
                     greeting = greeting,
-                    userName = userName,
+                    userName = userProfile?.fullName?.ifBlank { "Người dùng" } ?: "Người dùng",
                     address = address,
                     notificationCount = 3,
                     onNotificationClick = onNavigateToNotifications,
                     onCartClick = onNavigateToCart,
                     onProfileClick = onNavigateToProfile,
                     onNameClick = {
-                        tempName = userName
+                        tempName = userProfile?.fullName ?: ""
                         showNameDialog = true
                     },
                     onAddressClick = {
@@ -129,11 +181,12 @@ fun HomeScreen(
             // Categories
             item {
                 CategorySection(
-                    categories = sampleCategories,
+                    categories = categories,
                     selectedIndex = selectedCategory,
-                    onCategorySelected = { index -> 
+                    onCategorySelected = { index ->
                         selectedCategory = index
-                        onNavigateToCategory(sampleCategories[index].id)
+                        // Navigate using the selected category's id if available
+                        categories.getOrNull(index)?.let { onNavigateToCategory(it.id) }
                     }
                 )
             }
@@ -147,14 +200,14 @@ fun HomeScreen(
                 )
             }
             item {
-                if (isAILoading) {
-                    ShimmerFoodRow()
-                } else {
-                    FoodItemsRow(
-                        foods = sampleFoodItems,
-                        onFoodClick = onNavigateToFood
-                    )
-                }
+                    if (isAILoading) {
+                        ShimmerFoodRow()
+                    } else {
+                        FoodItemsRow(
+                            foods = foods,
+                            onFoodClick = onNavigateToFood
+                        )
+                    }
             }
 
             // Featured Restaurants
@@ -167,7 +220,7 @@ fun HomeScreen(
             }
             item {
                 RestaurantsRow(
-                    restaurants = sampleRestaurants,
+                    restaurants = restaurants,
                     onRestaurantClick = onNavigateToRestaurant
                 )
             }
@@ -200,7 +253,23 @@ fun HomeScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    if (tempName.isNotBlank()) userName = tempName
+                    if (tempName.isNotBlank() && userProfile != null) {
+                        val currentUser = userProfile!!
+                        val updatedUser = currentUser.copy(
+                            fullName = tempName,
+                            updatedAt = com.google.firebase.Timestamp.now()
+                        )
+                        coroutineScope.launch {
+                            val result = authRepo.updateUserProfile(updatedUser)
+                            if (result.isSuccess) {
+                                userProfile = updatedUser
+                                android.widget.Toast.makeText(context, "Đã cập nhật tên hiển thị!", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                val errMsg = result.exceptionOrNull()?.message ?: "Cập nhật thất bại"
+                                android.widget.Toast.makeText(context, "Lỗi: $errMsg", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                     showNameDialog = false
                 }) {
                     Text("Lưu", color = Orange500)
@@ -675,7 +744,18 @@ private fun FoodItemCard(food: FoodItem, onClick: () -> Unit) {
                     .background(food.bgColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = food.emoji, fontSize = 48.sp)
+                if (food.imageUrl.isNotBlank()) {
+                    coil.compose.AsyncImage(
+                        model = food.imageUrl,
+                        contentDescription = food.name,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                        placeholder = null,
+                        fallback = null
+                    )
+                } else {
+                    Text(text = food.emoji, fontSize = 48.sp)
+                }
             }
             // Info
             Column(modifier = Modifier.padding(12.dp)) {

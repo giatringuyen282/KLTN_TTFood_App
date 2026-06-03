@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.a43_kltn_ttfood" />
+                  <option name="mobileSdkAppId" value="1:917818130105:android:78cb7e6fbc5891ac13a568" />
+                  <option name="projectId" value="tt-food-5f570" />
+                  <option name="projectNumber" value="917818130105" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

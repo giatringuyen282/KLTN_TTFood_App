@@ -20,6 +20,7 @@ import com.example.a43_kltn_ttfood.ui.screens.checkout.CheckoutScreen
 import com.example.a43_kltn_ttfood.ui.screens.checkout.OrderSuccessScreen
 import com.example.a43_kltn_ttfood.ui.screens.tracking.OrderTrackingScreen
 import com.example.a43_kltn_ttfood.ui.screens.profile.*
+import com.example.a43_kltn_ttfood.ui.screens.admin.*
 
 @Composable
 fun TTFoodNavGraph(navController: NavHostController) {
@@ -283,9 +284,10 @@ fun TTFoodNavGraph(navController: NavHostController) {
                 onNavigateToOrderHistory = { navController.navigate(Screen.OrderHistory.route) },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) },
                 onLogout = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -309,6 +311,85 @@ fun TTFoodNavGraph(navController: NavHostController) {
         // Settings Screen
         composable(route = Screen.Settings.route) {
             SettingsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        // ==================== ADMIN ====================
+
+        // Admin Dashboard
+        composable(route = Screen.AdminDashboard.route) {
+            AdminDashboardScreen(
+                onNavigateToUsers = { navController.navigate(Screen.AdminUsers.route) },
+                onNavigateToOrders = { navController.navigate(Screen.AdminOrders.route) },
+                onNavigateToRestaurants = { navController.navigate(Screen.AdminRestaurants.route) },
+                onNavigateToVouchers = { navController.navigate(Screen.AdminVouchers.route) },
+                onNavigateToAuditLog = { navController.navigate(Screen.AdminAuditLog.route) },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Admin - User Management
+        composable(route = Screen.AdminUsers.route) {
+            UserManagementScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToUserDetail = { userId ->
+                    navController.navigate(Screen.AdminUserDetail.createRoute(userId))
+                }
+            )
+        }
+
+        // Admin - User Detail
+        composable(
+            route = Screen.AdminUserDetail.route,
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            UserDetailScreen(
+                userId = userId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Admin - Orders Management
+        composable(route = Screen.AdminOrders.route) {
+            AdminOrdersScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToOrderDetail = { orderId ->
+                    navController.navigate(Screen.AdminOrderDetail.createRoute(orderId))
+                }
+            )
+        }
+
+        // Admin - Order Detail
+        composable(
+            route = Screen.AdminOrderDetail.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            AdminOrderDetailScreen(
+                orderId = orderId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Admin - Restaurants Management
+        composable(route = Screen.AdminRestaurants.route) {
+            AdminRestaurantsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Admin - Vouchers Management
+        composable(route = Screen.AdminVouchers.route) {
+            AdminVouchersScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Admin - Audit Log
+        composable(route = Screen.AdminAuditLog.route) {
+            AdminAuditLogScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

@@ -36,4 +36,18 @@ sealed class Screen(val route: String) {
     data object OrderHistory : Screen("order_history")
     data object Favorites : Screen("favorites")
     data object Settings : Screen("settings")
+
+    // Admin
+    data object AdminDashboard : Screen("admin_dashboard")
+    data object AdminUsers : Screen("admin_users")
+    data object AdminUserDetail : Screen("admin_user_detail/{userId}") {
+        fun createRoute(userId: String) = "admin_user_detail/$userId"
+    }
+    data object AdminOrders : Screen("admin_orders")
+    data object AdminOrderDetail : Screen("admin_order_detail/{orderId}") {
+        fun createRoute(orderId: String) = "admin_order_detail/$orderId"
+    }
+    data object AdminRestaurants : Screen("admin_restaurants")
+    data object AdminVouchers : Screen("admin_vouchers")
+    data object AdminAuditLog : Screen("admin_audit_log")
 }

@@ -1,40 +1,42 @@
 package com.example.a43_kltn_ttfood.ui.screens.auth
 
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.a43_kltn_ttfood.data.repository.AuthRepository
 import com.example.a43_kltn_ttfood.ui.components.TTFoodButton
 import com.example.a43_kltn_ttfood.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
- * 📱 Xác thực OTP
- * - 6 ô nhập OTP tự động focus khi nhập
- * - Đếm ngược 60 giây → nút "Gửi lại OTP"
- * - Tự động xác nhận khi nhập đủ 6 số
- * - Bounce animation khi thành công
- * - Thông báo lỗi khi OTP sai
+ * 📧 Màn hình Xác minh Email (Thay thế OtpVerificationScreen)
+ * - Hiển thị hướng dẫn xác minh email qua link của Firebase
+ * - Nút "Xác nhận đã kích hoạt" kiểm tra trạng thái real-time
+ * - Nút "Gửi lại email" với đếm ngược 60 giây
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,11 +45,14 @@ fun OtpVerificationScreen(
     onVerificationSuccess: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    var otpValue by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val authRepo = remember { AuthRepository() }
+
     var countdown by remember { mutableIntStateOf(60) }
     var canResend by remember { mutableStateOf(false) }
-    var isVerifying by remember { mutableStateOf(false) }
-    var isError by remember { mutableStateOf(false) }
+    var isChecking by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSuccess by remember { mutableStateOf(false) }
 
     // Countdown timer
@@ -62,20 +67,7 @@ fun OtpVerificationScreen(
         }
     }
 
-    // Auto-verify when 6 digits entered
-    LaunchedEffect(otpValue) {
-        if (otpValue.length == 6) {
-            isVerifying = true
-            delay(1500) // Simulate API call
-            // TODO: Call API verify OTP
-            // Simulate success
-            isSuccess = true
-            delay(800)
-            onVerificationSuccess()
-        }
-    }
-
-    // Bounce animation
+    // Success bounce animation
     val bounceScale = remember { Animatable(1f) }
     LaunchedEffect(isSuccess) {
         if (isSuccess) {
@@ -92,6 +84,8 @@ fun OtpVerificationScreen(
                     dampingRatio = Spring.DampingRatioMediumBouncy
                 )
             )
+            delay(1000)
+            onVerificationSuccess()
         }
     }
 
@@ -117,84 +111,156 @@ fun OtpVerificationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 28.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Icon
-            Text(
-                text = if (isSuccess) "✅" else "📱",
-                fontSize = 56.sp,
-                modifier = Modifier.scale(bounceScale.value)
-            )
+            // Beautiful status icon container
+            Box(
+                modifier = Modifier
+                    .size(110.dp)
+                    .scale(bounceScale.value)
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = if (isSuccess) {
+                                listOf(SuccessGreen.copy(alpha = 0.2f), SuccessGreen.copy(alpha = 0.02f))
+                            } else {
+                                listOf(Orange500.copy(alpha = 0.15f), Orange500.copy(alpha = 0.01f))
+                            }
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isSuccess) "✅" else "✉️",
+                    fontSize = 54.sp
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Xác thực OTP",
-                style = MaterialTheme.typography.headlineLarge.copy(
+                text = "Xác minh tài khoản",
+                style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Mã xác thực đã được gửi đến",
+                text = "Liên kết xác minh đã được gửi đến email:",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Gray500,
                 textAlign = TextAlign.Center
             )
+
             Text(
                 text = phoneOrEmail,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
                 color = Orange500,
+                modifier = Modifier.padding(vertical = 4.dp),
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // OTP Input boxes
-            OtpInputField(
-                otpLength = 6,
-                otpValue = otpValue,
-                onOtpChange = {
-                    if (it.length <= 6 && it.all { c -> c.isDigit() }) {
-                        otpValue = it
-                        isError = false
-                    }
-                },
-                isError = isError,
-                isSuccess = isSuccess
-            )
+            // Step-by-step instructions Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Gray50),
+                border = BorderStroke(1.dp, Gray200)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Các bước thực hiện:",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
 
-            if (isError) {
-                Text(
-                    text = "Mã OTP không đúng. Vui lòng thử lại.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ErrorRed,
-                    modifier = Modifier.padding(top = 12.dp)
-                )
+                    InstructionStep(number = "1", text = "Mở hộp thư Email của bạn.")
+                    InstructionStep(number = "2", text = "Tìm email từ TTFood (hoặc Firebase).")
+                    InstructionStep(number = "3", text = "Bấm vào đường dẫn xác minh trong email.")
+                    InstructionStep(number = "4", text = "Quay lại đây và bấm nút \"Xác nhận đã kích hoạt\".")
+                }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Countdown / Resend
+            // Error display
+            AnimatedVisibility(visible = errorMessage != null) {
+                errorMessage?.let { msg ->
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        color = ErrorRed,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
+            }
+
+            // Confirm Button
+            TTFoodButton(
+                text = "Xác nhận đã kích hoạt",
+                onClick = {
+                    isChecking = true
+                    errorMessage = null
+                    scope.launch {
+                        val result = authRepo.checkIfEmailVerified()
+                        isChecking = false
+                        result.fold(
+                            onSuccess = { isVerified ->
+                                if (isVerified) {
+                                    isSuccess = true
+                                } else {
+                                    errorMessage = "Email của bạn vẫn chưa được xác minh. Vui lòng bấm vào liên kết trong email và thử lại."
+                                }
+                            },
+                            onFailure = { error ->
+                                errorMessage = error.message ?: "Có lỗi xảy ra khi kiểm tra xác minh."
+                            }
+                        )
+                    }
+                },
+                isLoading = isChecking,
+                enabled = !isChecking && !isSuccess
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Resend link button
             if (canResend) {
                 TextButton(
                     onClick = {
                         canResend = false
-                        otpValue = ""
-                        isError = false
-                        // TODO: Call API resend OTP
+                        errorMessage = null
+                        scope.launch {
+                            val result = authRepo.sendVerificationEmail()
+                            result.fold(
+                                onSuccess = {
+                                    Toast.makeText(context, "Đã gửi lại email xác minh!", Toast.LENGTH_SHORT).show()
+                                },
+                                onFailure = { error ->
+                                    errorMessage = error.message ?: "Không thể gửi lại email xác minh."
+                                    canResend = true
+                                }
+                            )
+                        }
                     }
                 ) {
                     Text(
-                        text = "Gửi lại mã OTP",
+                        text = "Gửi lại email xác minh",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -203,113 +269,41 @@ fun OtpVerificationScreen(
                 }
             } else {
                 Text(
-                    text = "Gửi lại mã sau ${countdown}s",
+                    text = "Gửi lại link sau ${countdown}s",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Gray500
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Verify button
-            TTFoodButton(
-                text = "Xác nhận",
-                onClick = {
-                    if (otpValue.length == 6) {
-                        isVerifying = true
-                        // Verification happens in LaunchedEffect
-                    }
-                },
-                isLoading = isVerifying,
-                enabled = otpValue.length == 6 && !isVerifying
-            )
+            Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
 
-/**
- * 6 ô OTP tự động focus
- */
 @Composable
-internal fun OtpInputField(
-    otpLength: Int,
-    otpValue: String,
-    onOtpChange: (String) -> Unit,
-    isError: Boolean,
-    isSuccess: Boolean
-) {
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        // Đợi composable attach xong rồi mới request focus
-        kotlinx.coroutines.delay(100)
-        try {
-            focusRequester.requestFocus()
-        } catch (_: Exception) {
-            // Ignore if focus request fails
-        }
-    }
-
-    Box {
-        // Hidden text field for input — dùng alpha(0f) thay vì size(0.dp) để tránh crash
-        BasicTextField(
-            value = otpValue,
-            onValueChange = onOtpChange,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+private fun InstructionStep(number: String, text: String) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
             modifier = Modifier
-                .focusRequester(focusRequester)
-                .size(1.dp)
-                .alpha(0f)
-        )
-
-        // Visible OTP boxes
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(Orange500.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
         ) {
-            repeat(otpLength) { index ->
-                val char = otpValue.getOrNull(index)?.toString() ?: ""
-                val isFocused = otpValue.length == index
-
-                val borderColor = when {
-                    isSuccess -> SuccessGreen
-                    isError -> ErrorRed
-                    isFocused -> Orange500
-                    char.isNotEmpty() -> Orange400
-                    else -> Gray300
-                }
-
-                val bgColor = when {
-                    isSuccess -> SuccessGreen.copy(alpha = 0.1f)
-                    isError -> ErrorRed.copy(alpha = 0.1f)
-                    char.isNotEmpty() -> Orange500.copy(alpha = 0.05f)
-                    else -> Gray50
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            color = bgColor,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        .border(
-                            width = if (isFocused) 2.dp else 1.5.dp,
-                            color = borderColor,
-                            shape = RoundedCornerShape(14.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = char,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+            Text(
+                text = number,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = Orange500
+            )
         }
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Gray700
+        )
     }
 }

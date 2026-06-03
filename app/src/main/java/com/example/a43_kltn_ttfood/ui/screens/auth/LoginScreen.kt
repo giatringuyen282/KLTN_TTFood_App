@@ -30,10 +30,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.a43_kltn_ttfood.data.repository.AuthRepository
 import com.example.a43_kltn_ttfood.ui.components.TTFoodButton
 import com.example.a43_kltn_ttfood.ui.components.TTFoodTextField
 import com.example.a43_kltn_ttfood.ui.components.SocialLoginButton
 import com.example.a43_kltn_ttfood.ui.theme.*
+import kotlinx.coroutines.launch
 
 /**
  * 🔐 Màn hình Đăng nhập
@@ -52,6 +54,8 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+    val authRepo = remember { AuthRepository() }
 
     // Form states
     var phoneOrEmail by remember { mutableStateOf("") }
@@ -147,7 +151,7 @@ fun LoginScreen(
                 label = "Mật khẩu",
                 leadingIcon = Icons.Outlined.Lock,
                 isPassword = true,
-                isError = passwordError,
+                isError = passwordError || loginErrorMessage != null,
                 errorMessage = loginErrorMessage ?: if (passwordError) "Mật khẩu không đúng" else null,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
@@ -200,7 +204,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Login button
+            // Login button — Firebase Auth
             TTFoodButton(
                 text = "Đăng nhập",
                 onClick = {
@@ -210,13 +214,32 @@ fun LoginScreen(
 
                     if (!phoneOrEmailError && !passwordError) {
                         isLoading = true
-                        // TODO: Call API login
-                        // Simulate login
-                        onLoginSuccess()
+                        loginErrorMessage = null
+
+                        scope.launch {
+                            val result = authRepo.loginWithEmail(
+                                email = phoneOrEmail.trim(),
+                                password = password
+                            )
+                            isLoading = false
+
+                            result.fold(
+                                onSuccess = {
+                                    onLoginSuccess()
+                                },
+                                onFailure = { error ->
+                                    loginErrorMessage = if (error.message == "EMAIL_NOT_VERIFIED") {
+                                        "Tài khoản chưa được xác minh. Vui lòng kiểm tra hộp thư để nhấp vào liên kết xác minh."
+                                    } else {
+                                        error.message
+                                    }
+                                }
+                            )
+                        }
                     }
                 },
                 isLoading = isLoading,
-                enabled = phoneOrEmail.isNotBlank() && password.isNotBlank()
+                enabled = phoneOrEmail.isNotBlank() && password.isNotBlank() && !isLoading
             )
 
             Spacer(modifier = Modifier.height(32.dp))

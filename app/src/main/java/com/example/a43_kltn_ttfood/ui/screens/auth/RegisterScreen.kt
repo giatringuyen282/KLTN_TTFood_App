@@ -25,17 +25,19 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.a43_kltn_ttfood.data.repository.AuthRepository
 import com.example.a43_kltn_ttfood.ui.components.PasswordStrengthIndicator
 import com.example.a43_kltn_ttfood.ui.components.TTFoodButton
 import com.example.a43_kltn_ttfood.ui.components.TTFoodTextField
 import com.example.a43_kltn_ttfood.ui.theme.*
+import kotlinx.coroutines.launch
 
 /**
  * ✍️ Màn hình Đăng ký
  * - Họ tên, SĐT, Email, Mật khẩu + Xác nhận
  * - Password strength indicator
  * - Checkbox đồng ý Điều khoản & Chính sách
- * - Gửi OTP xác thực
+ * - Firebase Auth: tạo account + Firestore user doc
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +46,8 @@ fun RegisterScreen(
     onNavigateBack: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+    val authRepo = remember { AuthRepository() }
 
     // Form states
     var fullName by remember { mutableStateOf("") }
@@ -60,6 +64,10 @@ fun RegisterScreen(
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+    var registerErrorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
 
     fun validate(): Boolean {
         var valid = true
@@ -94,6 +102,7 @@ fun RegisterScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { },
@@ -135,12 +144,31 @@ fun RegisterScreen(
                 modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
             )
 
+            // Error banner
+            if (registerErrorMessage != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = ErrorRed.copy(alpha = 0.1f)),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "⚠️ $registerErrorMessage",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ErrorRed,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+
             // Full Name
             TTFoodTextField(
                 value = fullName,
                 onValueChange = {
                     fullName = it
                     fullNameError = null
+                    registerErrorMessage = null
                 },
                 label = "Họ và tên",
                 leadingIcon = Icons.Outlined.Person,
@@ -163,6 +191,7 @@ fun RegisterScreen(
                 onValueChange = {
                     phone = it.filter { c -> c.isDigit() }
                     phoneError = null
+                    registerErrorMessage = null
                 },
                 label = "Số điện thoại",
                 leadingIcon = Icons.Outlined.Phone,
@@ -185,6 +214,7 @@ fun RegisterScreen(
                 onValueChange = {
                     email = it
                     emailError = null
+                    registerErrorMessage = null
                 },
                 label = "Email",
                 leadingIcon = Icons.Outlined.Email,
@@ -207,6 +237,7 @@ fun RegisterScreen(
                 onValueChange = {
                     password = it
                     passwordError = null
+                    registerErrorMessage = null
                 },
                 label = "Mật khẩu",
                 leadingIcon = Icons.Outlined.Lock,
@@ -236,6 +267,7 @@ fun RegisterScreen(
                 onValueChange = {
                     confirmPassword = it
                     confirmPasswordError = null
+                    registerErrorMessage = null
                 },
                 label = "Xác nhận mật khẩu",
                 leadingIcon = Icons.Outlined.Lock,
@@ -299,19 +331,39 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Register button
+            // Register button — Firebase Auth
             TTFoodButton(
                 text = "Đăng ký",
                 onClick = {
                     if (validate() && agreeTerms) {
                         isLoading = true
-                        // TODO: Call API register → send OTP
-                        onNavigateToOtp(phone)
+                        registerErrorMessage = null
+
+                        scope.launch {
+                            val result = authRepo.register(
+                                fullName = fullName.trim(),
+                                phone = phone.trim(),
+                                email = email.trim(),
+                                password = password
+                            )
+                            isLoading = false
+
+                            result.fold(
+                                onSuccess = {
+                                    // Đăng ký thành công → chuyển đến trang Login
+                                    onNavigateToOtp(email)
+                                },
+                                onFailure = { error ->
+                                    registerErrorMessage = error.message
+                                }
+                            )
+                        }
                     }
                 },
                 isLoading = isLoading,
                 enabled = agreeTerms && fullName.isNotBlank() && phone.isNotBlank()
                         && email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank()
+                        && !isLoading
             )
 
             Spacer(modifier = Modifier.height(24.dp))

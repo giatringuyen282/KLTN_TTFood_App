@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -46,9 +48,26 @@ fun ProfileDashboardScreen(
     onNavigateToOrderHistory: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToAdmin: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val authRepo = remember { com.example.a43_kltn_ttfood.data.repository.AuthRepository() }
+
+    // Lấy user profile từ Firestore
+    var userProfile by remember { mutableStateOf<com.example.a43_kltn_ttfood.data.model.User?>(null) }
+    LaunchedEffect(Unit) {
+        userProfile = authRepo.getCurrentUserProfile()
+    }
+
+    val displayName = userProfile?.fullName?.ifBlank { "Người dùng" } ?: "Người dùng"
+    val displayContact = buildString {
+        userProfile?.phone?.let { if (it.isNotBlank()) append(it) }
+        userProfile?.email?.let { if (it.isNotBlank()) { if (isNotEmpty()) append(" • "); append(it) } }
+        if (isEmpty()) append("Chưa cập nhật thông tin")
+    }
+    val isAdmin = userProfile?.role == com.example.a43_kltn_ttfood.data.model.UserRole.ADMIN
 
     Scaffold(
         containerColor = Gray50,
@@ -79,12 +98,17 @@ fun ProfileDashboardScreen(
                         modifier = Modifier.size(64.dp).clip(CircleShape).background(GradientStart),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("👤", fontSize = 32.sp)
+                        Text(
+                            displayName.firstOrNull()?.uppercase() ?: "?",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = White
+                        )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Nguyễn Văn A", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-                        Text("0901234567 • a.nguyen@email.com", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                        Text(displayName, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        Text(displayContact, style = MaterialTheme.typography.bodySmall, color = Gray500)
                     }
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Sửa", tint = Gray400)
                 }
@@ -107,7 +131,22 @@ fun ProfileDashboardScreen(
                         ProfileMenuItem("Cài đặt & Quyền riêng tư", "⚙️", onNavigateToSettings)
                     }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Admin panel — chỉ hiển thị khi role = admin
+            if (isAdmin) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        ProfileMenuItem("🛠️ Quản trị viên (Admin)", "⚙️", onNavigateToAdmin)
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
 
             // Logout
@@ -137,7 +176,16 @@ fun ProfileDashboardScreen(
             title = { Text("Xác nhận đăng xuất", fontWeight = FontWeight.Bold) },
             text = { Text("Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?") },
             confirmButton = {
-                Button(onClick = { showLogoutDialog = false; onLogout() }, colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)) {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        scope.launch {
+                            authRepo.logout()
+                            onLogout()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+                ) {
                     Text("Đăng xuất")
                 }
             },
@@ -168,15 +216,32 @@ fun ProfileMenuItem(title: String, icon: String, onClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
-    var name by remember { mutableStateOf("Nguyễn Văn A") }
-    var email by remember { mutableStateOf("a.nguyen@email.com") }
-    var phone by remember { mutableStateOf("0901234567") }
-    var dob by remember { mutableStateOf("01/01/1995") }
+    val authRepo = remember { com.example.a43_kltn_ttfood.data.repository.AuthRepository() }
+    var userProfile by remember { mutableStateOf<com.example.a43_kltn_ttfood.data.model.User?>(null) }
+    
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("Nam") }
     
+    var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        userProfile = authRepo.getCurrentUserProfile()
+        userProfile?.let {
+            name = it.fullName
+            email = it.email
+            phone = it.phone
+            dob = it.dob
+            gender = it.gender.ifBlank { "Nam" }
+        }
+        isLoading = false
+    }
 
     Scaffold(
         containerColor = White,
@@ -191,18 +256,39 @@ fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
             Box(modifier = Modifier.fillMaxWidth().padding(20.dp).navigationBarsPadding()) {
                 Button(
                     onClick = {
+                        val currentUser = userProfile
+                        if (currentUser == null) {
+                            android.widget.Toast.makeText(context, "Lỗi: Không tìm thấy thông tin người dùng", android.widget.Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (name.isBlank()) {
+                            android.widget.Toast.makeText(context, "Họ và tên không được để trống", android.widget.Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
                         isSaving = true
                         coroutineScope.launch {
-                            delay(1500)
+                            val updatedUser = currentUser.copy(
+                                fullName = name,
+                                phone = phone,
+                                dob = dob,
+                                gender = gender,
+                                updatedAt = com.google.firebase.Timestamp.now()
+                            )
+                            val result = authRepo.updateUserProfile(updatedUser)
                             isSaving = false
-                            android.widget.Toast.makeText(context, "Đã lưu thay đổi!", android.widget.Toast.LENGTH_SHORT).show()
-                            onNavigateBack()
+                            if (result.isSuccess) {
+                                android.widget.Toast.makeText(context, "Đã lưu thay đổi!", android.widget.Toast.LENGTH_SHORT).show()
+                                onNavigateBack()
+                            } else {
+                                val errMsg = result.exceptionOrNull()?.message ?: "Cập nhật thất bại"
+                                android.widget.Toast.makeText(context, "Lỗi: $errMsg", android.widget.Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Orange500),
-                    enabled = !isSaving
+                    enabled = !isSaving && !isLoading
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -213,87 +299,107 @@ fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            // Avatar
-            Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier.clickable { /* Mở Gallery */ }) {
-                Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(GradientStart), contentAlignment = Alignment.Center) {
-                    Text("👤", fontSize = 50.sp)
-                }
-                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Orange500).border(2.dp, White, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Edit, "Đổi ảnh", tint = White, modifier = Modifier.size(16.dp))
-                }
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Orange500)
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            OutlinedTextField(
-                value = name, onValueChange = { name = it },
-                label = { Text("Họ và tên") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = phone, onValueChange = { phone = it },
-                label = { Text("Số điện thoại") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = email, onValueChange = { email = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = dob, onValueChange = { dob = it },
-                    label = { Text("Ngày sinh") },
-                    modifier = Modifier.weight(1f),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                var expandedGender by remember { mutableStateOf(false) }
-                val genderOptions = listOf("Nam", "Nữ", "Khác")
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
+                // Avatar
+                Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier.clickable { /* Mở Gallery */ }) {
+                    Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(GradientStart), contentAlignment = Alignment.Center) {
+                        Text("👤", fontSize = 50.sp)
+                    }
+                    Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Orange500).border(2.dp, White, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Edit, "Đổi ảnh", tint = White, modifier = Modifier.size(16.dp))
+                    }
+                }
                 
-                ExposedDropdownMenuBox(
-                    expanded = expandedGender,
-                    onExpandedChange = { expandedGender = !expandedGender },
-                    modifier = Modifier.weight(1f)
-                ) {
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text("Họ và tên") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isSaving
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = phone, onValueChange = { phone = it },
+                    label = { Text("Số điện thoại") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isSaving
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = email, onValueChange = {},
+                    label = { Text("Email (Không thể thay đổi)") },
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Gray300,
+                        unfocusedBorderColor = Gray200,
+                        focusedLabelColor = Gray500
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = false
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     OutlinedTextField(
-                        value = gender,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Giới tính") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGender) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        value = dob, onValueChange = { dob = it },
+                        label = { Text("Ngày sinh") },
+                        modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isSaving
                     )
-                    ExposedDropdownMenu(
-                        expanded = expandedGender,
-                        onDismissRequest = { expandedGender = false },
-                        modifier = Modifier.background(White)
+                    var expandedGender by remember { mutableStateOf(false) }
+                    val genderOptions = listOf("Nam", "Nữ", "Khác")
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = expandedGender && !isSaving,
+                        onExpandedChange = { if (!isSaving) expandedGender = !expandedGender },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        genderOptions.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
-                                onClick = {
-                                    gender = option
-                                    expandedGender = false
-                                }
-                            )
+                        OutlinedTextField(
+                            value = gender,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Giới tính") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGender) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500, focusedLabelColor = Orange500),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = !isSaving
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedGender && !isSaving,
+                            onDismissRequest = { expandedGender = false },
+                            modifier = Modifier.background(White)
+                        ) {
+                            genderOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        gender = option
+                                        expandedGender = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
