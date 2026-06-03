@@ -3,49 +3,49 @@ package com.example.a43_kltn_ttfood.data.model
 import androidx.compose.ui.graphics.Color
 
 data class Banner(
-    val id: Int,
-    val emoji: String,
-    val title: String,
-    val subtitle: String,
-    val colorStart: Color,
-    val colorEnd: Color
+    val id: Int = 0,
+    val emoji: String = "",
+    val title: String = "",
+    val subtitle: String = "",
+    val colorStart: Color = Color(0xFFFF6B35),
+    val colorEnd: Color = Color(0xFFE53935)
 )
 
 data class FoodCategory(
-    val id: Int,
-    val emoji: String,
-    val name: String
+    val id: Int = 0,
+    val emoji: String = "",
+    val name: String = ""
 )
 
 data class FoodItem(
-    val id: Int,
-    val emoji: String,
-    val name: String,
-    val restaurant: String,
-    val price: String,
-    val rating: Float,
+    val id: Int = 0,
+    val emoji: String = "",
+    val name: String = "",
+    val restaurant: String = "",
+    val price: String = "",
+    val rating: Float = 0f,
     val bgColor: Color = Color(0xFFFFF3E0),
     val imageUrl: String = ""  // URL ảnh thực tế từ Firebase Storage
 )
 
 data class Restaurant(
-    val id: Int,
-    val emoji: String,
-    val name: String,
-    val rating: Float,
-    val distance: String,
-    val deliveryTime: String,
+    val id: Int = 0,
+    val emoji: String = "",
+    val name: String = "",
+    val rating: Float = 0f,
+    val distance: String = "",
+    val deliveryTime: String = "",
     val badge: String? = null,
     val colorStart: Color = Color(0xFFFF6B35),
     val colorEnd: Color = Color(0xFFE53935)
 )
 
 data class ReorderItem(
-    val id: Int,
-    val emoji: String,
-    val foodName: String,
-    val restaurant: String,
-    val price: String
+    val id: Int = 0,
+    val emoji: String = "",
+    val foodName: String = "",
+    val restaurant: String = "",
+    val price: String = ""
 )
 
 // ========================
