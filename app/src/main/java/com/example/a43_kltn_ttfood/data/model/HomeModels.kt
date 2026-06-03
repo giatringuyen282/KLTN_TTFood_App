@@ -1,6 +1,7 @@
 package com.example.a43_kltn_ttfood.data.model
 
 import androidx.compose.ui.graphics.Color
+import com.google.firebase.firestore.Exclude
 
 data class Banner(
     val id: Int = 0,
@@ -24,9 +25,34 @@ data class FoodItem(
     val restaurant: String = "",
     val price: String = "",
     val rating: Float = 0f,
-    val bgColor: Color = Color(0xFFFFF3E0),
+    val bgColorVal: Long = 0xFFFFF3E0L,
     val imageUrl: String = ""  // URL ảnh thực tế từ Firebase Storage
-)
+) {
+    // Secondary constructor for compatibility with Color in sample data and existing code
+    constructor(
+        id: Int,
+        emoji: String,
+        name: String,
+        restaurant: String,
+        price: String,
+        rating: Float,
+        bgColor: Color = Color(0xFFFFF3E0)
+    ) : this(
+        id = id,
+        emoji = emoji,
+        name = name,
+        restaurant = restaurant,
+        price = price,
+        rating = rating,
+        bgColorVal = bgColor.value.toLong(),
+        imageUrl = ""
+    )
+
+    // Expose bgColor property so all existing UI layout references continue to work
+    @get:Exclude
+    val bgColor: Color
+        get() = Color(bgColorVal.toULong())
+}
 
 data class Restaurant(
     val id: Int = 0,
