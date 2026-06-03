@@ -20,22 +20,26 @@ object DatabaseSeeder {
      * This function should be called once (e.g., on app launch).
      */
     suspend fun seedIfNeeded() {
-        // Seed categories
-        val catCount = try { categoriesCol.get().await().size() } catch (e: Exception) { 0 }
-        if (catCount == 0) {
-            sampleCategories.forEach { categoriesCol.add(it).await() }
-        }
+        try {
+            // Seed categories
+            val catCount = try { categoriesCol.get().await().size() } catch (e: Exception) { 0 }
+            if (catCount == 0) {
+                sampleCategories.forEach { categoriesCol.add(it).await() }
+            }
 
-        // Seed restaurants
-        val restCount = try { restaurantsCol.get().await().size() } catch (e: Exception) { 0 }
-        if (restCount == 0) {
-            sampleRestaurants.forEach { restaurantsCol.add(it).await() }
-        }
+            // Seed restaurants
+            val restCount = try { restaurantsCol.get().await().size() } catch (e: Exception) { 0 }
+            if (restCount == 0) {
+                sampleRestaurants.forEach { restaurantsCol.add(it).await() }
+            }
 
-        // Seed food items
-        val foodCount = try { foodCol.get().await().size() } catch (e: Exception) { 0 }
-        if (foodCount == 0) {
-            sampleFoodItems.forEach { foodCol.add(it).await() }
+            // Seed food items
+            val foodCount = try { foodCol.get().await().size() } catch (e: Exception) { 0 }
+            if (foodCount == 0) {
+                sampleFoodItems.forEach { foodCol.add(it).await() }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

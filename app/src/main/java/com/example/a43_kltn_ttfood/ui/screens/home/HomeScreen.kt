@@ -91,37 +91,53 @@ fun HomeScreen(
 
     // Load data from Firestore
     LaunchedEffect(Unit) {
-        // Seed if needed
-        dbSeeder.seedIfNeeded()
-        // Collect categories
-        categoryRepo.getAllCategories().collect { categories = it }
+        try {
+            // Seed if needed
+            dbSeeder.seedIfNeeded()
+            // Collect categories
+            categoryRepo.getAllCategories().collect { categories = it }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
     LaunchedEffect(Unit) {
-        foodRepo.getAllFoodItems().collect { foods = it }
+        try {
+            foodRepo.getAllFoodItems().collect { foods = it }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
     LaunchedEffect(Unit) {
-        restaurantRepo.getAllRestaurants().collect { modelList ->
-            restaurants = modelList.map { model ->
-                val sampleMatch = sampleRestaurants.find {
-                    it.name.equals(model.name, ignoreCase = true)
+        try {
+            restaurantRepo.getAllRestaurants().collect { modelList ->
+                restaurants = modelList.map { model ->
+                    val sampleMatch = sampleRestaurants.find {
+                        it.name.equals(model.name, ignoreCase = true)
+                    }
+                    Restaurant(
+                        id = sampleMatch?.id ?: (model.id.toIntOrNull() ?: model.name.hashCode()),
+                        emoji = model.emoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
+                        name = model.name,
+                        rating = model.rating.toFloat(),
+                        distance = sampleMatch?.distance ?: "1.2 km",
+                        deliveryTime = sampleMatch?.deliveryTime ?: "15-20 min",
+                        badge = if (model.isOpen) null else "Đóng cửa",
+                        colorStart = sampleMatch?.colorStart ?: Orange500,
+                        colorEnd = sampleMatch?.colorEnd ?: Orange500
+                    )
                 }
-                Restaurant(
-                    id = sampleMatch?.id ?: (model.id.toIntOrNull() ?: model.name.hashCode()),
-                    emoji = model.emoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
-                    name = model.name,
-                    rating = model.rating.toFloat(),
-                    distance = sampleMatch?.distance ?: "1.2 km",
-                    deliveryTime = sampleMatch?.deliveryTime ?: "15-20 min",
-                    badge = if (model.isOpen) null else "Đóng cửa",
-                    colorStart = sampleMatch?.colorStart ?: Orange500,
-                    colorEnd = sampleMatch?.colorEnd ?: Orange500
-                )
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     LaunchedEffect(Unit) {
-        userProfile = authRepo.getCurrentUserProfile()
+        try {
+            userProfile = authRepo.getCurrentUserProfile()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     // Simulate AI loading

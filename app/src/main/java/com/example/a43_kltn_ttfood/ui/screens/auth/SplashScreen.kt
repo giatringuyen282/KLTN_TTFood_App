@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.example.a43_kltn_ttfood.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.example.a43_kltn_ttfood.data.repository.AuthRepository
 
 /**
  * 🚀 Splash Screen
@@ -61,9 +62,13 @@ fun SplashScreen(
         // Chờ 2 giây rồi chuyển trang
         delay(1500)
 
-        // TODO: Kiểm tra token ở đây
-        // if (hasValidToken) onNavigateToHome() else
-        onNavigateToOnboarding()
+        // Kiểm tra xem người dùng đã đăng nhập chưa
+        val authRepo = AuthRepository()
+        if (authRepo.isLoggedIn) {
+            onNavigateToHome()
+        } else {
+            onNavigateToOnboarding()
+        }
     }
 
     // Gradient background cam → đỏ
