@@ -40,6 +40,8 @@ import com.example.a43_kltn_ttfood.data.model.FoodItem
 import com.example.a43_kltn_ttfood.data.model.Restaurant
 import com.example.a43_kltn_ttfood.data.model.sampleFoodItems
 import com.example.a43_kltn_ttfood.data.model.sampleRestaurants
+import com.example.a43_kltn_ttfood.data.repository.AuthRepository
+import com.example.a43_kltn_ttfood.data.repository.CartRepository
 import com.example.a43_kltn_ttfood.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -50,6 +52,8 @@ fun RestaurantDetailScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToFood: (Int) -> Unit = {}
 ) {
+    val cartRepo = remember { CartRepository() }
+    val authRepo = remember { AuthRepository() }
     val restaurant = remember {
         sampleRestaurants.find { it.id == restaurantId } ?: sampleRestaurants.first()
     }
@@ -246,9 +250,30 @@ fun RestaurantDetailScreen(
         ) {
             FoodDetailBottomSheet(
                 food = selectedFoodForDetail!!,
-                onAddToCart = {
-                    android.widget.Toast.makeText(context, "Đã thêm món vào giỏ hàng!", android.widget.Toast.LENGTH_SHORT).show()
-                    coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { selectedFoodForDetail = null }
+                onAddToCart = { quantity, toppings ->
+                    val uid = authRepo.currentFirebaseUser?.uid
+                    if (uid != null) {
+                        coroutineScope.launch {
+                            val result = cartRepo.addToCart(
+                                userId = uid,
+                                food = selectedFoodForDetail!!,
+                                quantity = quantity,
+                                toppings = toppings
+                            )
+                            result.fold(
+                                onSuccess = {
+                                    android.widget.Toast.makeText(context, "✅ Đã thêm vào giỏ hàng!", android.widget.Toast.LENGTH_SHORT).show()
+                                },
+                                onFailure = { e ->
+                                    android.widget.Toast.makeText(context, "❌ Lỗi: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            )
+                            sheetState.hide()
+                            selectedFoodForDetail = null
+                        }
+                    } else {
+                        android.widget.Toast.makeText(context, "Vui lòng đăng nhập để đặt hàng", android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
         }
@@ -506,7 +531,7 @@ fun FoodItemHorizontalCard(food: FoodItem, onClick: () -> Unit) {
 }
 
 @Composable
-fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: () -> Unit) {
+fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: (Int, String) -> Unit) {
     var quantity by remember { mutableIntStateOf(1) }
     var selectedSize by remember { mutableStateOf("Vừa") }
     
@@ -642,13 +667,16 @@ fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: () -> Unit) {
                 Spacer(modifier = Modifier.width(16.dp))
                 
                 // Add Button
+                val unitPrice = food.price.replace("[^0-9]".toRegex(), "").toIntOrNull() ?: 55000
+                val totalPrice = quantity * unitPrice
+                val formattedPrice = String.format("%,dđ", totalPrice).replace(",", ".")
                 Button(
-                    onClick = onAddToCart,
+                    onClick = { onAddToCart(quantity, selectedSize) },
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Orange500)
                 ) {
-                    Text("Thêm - ${quantity * 55}.000đ", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text("Thêm - $formattedPrice", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))

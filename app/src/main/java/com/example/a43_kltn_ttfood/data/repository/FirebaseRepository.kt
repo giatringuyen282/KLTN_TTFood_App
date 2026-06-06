@@ -1,8 +1,10 @@
 package com.example.a43_kltn_ttfood.data.repository
 
 import android.net.Uri
+import android.util.Log
 import com.example.a43_kltn_ttfood.data.model.*
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
@@ -10,6 +12,16 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+
+fun <T> DocumentSnapshot.toObjectSafe(clazz: Class<T>): T? {
+    return try {
+        this.toObject(clazz)
+    } catch (e: Exception) {
+        Log.e("FirebaseRepository", "Failed to deserialize document ${this.id} to ${clazz.simpleName}", e)
+        null
+    }
+}
+
 
 /**
  * Repository quản lý Users trên Firestore
@@ -32,7 +44,7 @@ class UserRepository {
                     return@addSnapshotListener
                 }
                 val users = snapshot?.documents?.mapNotNull {
-                    it.toObject(User::class.java)
+                    it.toObjectSafe(User::class.java)
                 } ?: emptyList()
                 trySend(users)
             }
@@ -52,7 +64,7 @@ class UserRepository {
                     return@addSnapshotListener
                 }
                 val users = snapshot?.documents?.mapNotNull {
-                    it.toObject(User::class.java)
+                    it.toObjectSafe(User::class.java)
                 }?.filter { user ->
                     user.fullName.lowercase().contains(queryLower) ||
                     user.phone.contains(queryLower) ||
@@ -69,7 +81,7 @@ class UserRepository {
     suspend fun getUserById(userId: String): User? {
         return try {
             usersCollection.document(userId).get().await()
-                .toObject(User::class.java)
+                .toObjectSafe(User::class.java)
         } catch (e: Exception) {
             null
         }
@@ -88,7 +100,7 @@ class UserRepository {
                     return@addSnapshotListener
                 }
                 val users = snapshot?.documents?.mapNotNull {
-                    it.toObject(User::class.java)
+                    it.toObjectSafe(User::class.java)
                 } ?: emptyList()
                 trySend(users)
             }
@@ -172,7 +184,7 @@ class UserRepository {
                     return@addSnapshotListener
                 }
                 val logs = snapshot?.documents?.mapNotNull {
-                    it.toObject(AuditLog::class.java)
+                    it.toObjectSafe(AuditLog::class.java)
                 } ?: emptyList()
                 trySend(logs)
             }
@@ -192,7 +204,7 @@ class UserRepository {
                     return@addSnapshotListener
                 }
                 val logs = snapshot?.documents?.mapNotNull {
-                    it.toObject(AuditLog::class.java)
+                    it.toObjectSafe(AuditLog::class.java)
                 } ?: emptyList()
                 trySend(logs)
             }
@@ -232,6 +244,30 @@ class OrderRepository {
     private val ordersCollection = db.collection("orders")
 
     /**
+     * Tạo đơn hàng mới trong Firestore (bao gồm thêm các món ăn vào subcollection)
+     */
+    suspend fun placeOrder(order: Order, items: List<OrderItem>): Result<String> {
+        return try {
+            val docRef = ordersCollection.document() // Auto-generate order ID
+            val finalOrder = order.copy(id = docRef.id)
+            docRef.set(finalOrder).await()
+
+            // Thêm các món ăn vào subcollection order_items
+            val orderItemsCol = docRef.collection("order_items")
+            val batch = db.batch()
+            for (item in items) {
+                val itemRef = orderItemsCol.document()
+                batch.set(itemRef, item.copy(id = itemRef.id))
+            }
+            batch.commit().await()
+
+            Result.success(docRef.id)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Lấy đơn hàng của một user cụ thể
      */
     fun getOrdersByUser(userId: String): Flow<List<Order>> = callbackFlow {
@@ -244,7 +280,7 @@ class OrderRepository {
                     return@addSnapshotListener
                 }
                 val orders = snapshot?.documents?.mapNotNull {
-                    it.toObject(Order::class.java)
+                    it.toObjectSafe(Order::class.java)
                 } ?: emptyList()
                 trySend(orders)
             }
@@ -263,7 +299,7 @@ class OrderRepository {
                     return@addSnapshotListener
                 }
                 val orders = snapshot?.documents?.mapNotNull {
-                    it.toObject(Order::class.java)
+                    it.toObjectSafe(Order::class.java)
                 } ?: emptyList()
                 trySend(orders)
             }
@@ -278,7 +314,7 @@ class OrderRepository {
     suspend fun getOrderById(orderId: String): Order? {
         return try {
             ordersCollection.document(orderId).get().await()
-                .toObject(Order::class.java)
+                .toObjectSafe(Order::class.java)
         } catch (e: Exception) {
             null
         }
@@ -295,7 +331,7 @@ class OrderRepository {
                     return@addSnapshotListener
                 }
                 val items = snapshot?.documents?.mapNotNull {
-                    it.toObject(OrderItem::class.java)
+                    it.toObjectSafe(OrderItem::class.java)
                 } ?: emptyList()
                 trySend(items)
             }
@@ -363,7 +399,7 @@ class RestaurantRepository {
                     return@addSnapshotListener
                 }
                 val restaurants = snapshot?.documents?.mapNotNull {
-                    it.toObject(RestaurantModel::class.java)
+                    it.toObjectSafe(RestaurantModel::class.java)
                 } ?: emptyList()
                 trySend(restaurants)
             }
@@ -376,7 +412,7 @@ class RestaurantRepository {
     suspend fun getRestaurantById(restaurantId: String): RestaurantModel? {
         return try {
             restaurantsCollection.document(restaurantId).get().await()
-                .toObject(RestaurantModel::class.java)
+                .toObjectSafe(RestaurantModel::class.java)
         } catch (e: Exception) {
             null
         }
@@ -442,7 +478,7 @@ class VoucherRepository {
                     return@addSnapshotListener
                 }
                 val vouchers = snapshot?.documents?.mapNotNull {
-                    it.toObject(Voucher::class.java)
+                    it.toObjectSafe(Voucher::class.java)
                 } ?: emptyList()
                 trySend(vouchers)
             }
@@ -517,7 +553,7 @@ class CategoryRepository {
                     return@addSnapshotListener
                 }
                 val categories = snapshot?.documents?.mapNotNull {
-                    it.toObject(FoodCategory::class.java)
+                    it.toObjectSafe(FoodCategory::class.java)
                 } ?: emptyList()
                 trySend(categories)
             }
@@ -528,7 +564,7 @@ class CategoryRepository {
     suspend fun getCategoryById(id: Int): FoodCategory? {
         return try {
             categoriesCollection.whereEqualTo("id", id).limit(1).get().await()
-                .documents.firstOrNull()?.toObject(FoodCategory::class.java)
+                .documents.firstOrNull()?.toObjectSafe(FoodCategory::class.java)
         } catch (e: Exception) {
             null
         }
@@ -552,7 +588,7 @@ class FoodRepository {
                     return@addSnapshotListener
                 }
                 val foods = snapshot?.documents?.mapNotNull {
-                    it.toObject(FoodItem::class.java)
+                    it.toObjectSafe(FoodItem::class.java)
                 } ?: emptyList()
                 trySend(foods)
             }
@@ -563,7 +599,7 @@ class FoodRepository {
     suspend fun getFoodById(id: Int): FoodItem? {
         return try {
             foodCollection.whereEqualTo("id", id).limit(1).get().await()
-                .documents.firstOrNull()?.toObject(FoodItem::class.java)
+                .documents.firstOrNull()?.toObjectSafe(FoodItem::class.java)
         } catch (e: Exception) {
             null
         }
@@ -578,7 +614,7 @@ class FoodRepository {
                     close(error)
                     return@addSnapshotListener
                 }
-                val foods = snapshot?.documents?.mapNotNull { it.toObject(FoodItem::class.java) }
+                val foods = snapshot?.documents?.mapNotNull { it.toObjectSafe(FoodItem::class.java) }
                     ?.filter { food ->
                         food.name.lowercase().contains(lower) ||
                                 food.restaurant.lowercase().contains(lower)

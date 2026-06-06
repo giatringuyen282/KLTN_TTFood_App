@@ -111,13 +111,16 @@ fun HomeScreen(
         try {
             restaurantRepo.getAllRestaurants().collect { modelList ->
                 restaurants = modelList.map { model ->
+                    val modelName = model.name.orEmpty()
+                    val modelEmoji = model.emoji.orEmpty()
+                    val modelId = model.id.orEmpty()
                     val sampleMatch = sampleRestaurants.find {
-                        it.name.equals(model.name, ignoreCase = true)
+                        it.name.equals(modelName, ignoreCase = true)
                     }
                     Restaurant(
-                        id = sampleMatch?.id ?: (model.id.toIntOrNull() ?: model.name.hashCode()),
-                        emoji = model.emoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
-                        name = model.name,
+                        id = sampleMatch?.id ?: (modelId.toIntOrNull() ?: modelName.hashCode()),
+                        emoji = modelEmoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
+                        name = modelName,
                         rating = model.rating.toFloat(),
                         distance = sampleMatch?.distance ?: "1.2 km",
                         deliveryTime = sampleMatch?.deliveryTime ?: "15-20 min",

@@ -2,6 +2,7 @@ package com.example.a43_kltn_ttfood.data.model
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
+import com.google.firebase.firestore.Exclude
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ServerTimestamp
 
@@ -261,3 +262,25 @@ object AuditAction {
     const val UPDATE_RESTAURANT = "update_restaurant"
     const val DELETE_FOOD = "delete_food"
 }
+
+/**
+ * 📁 cart_items collection (Giỏ hàng trực tuyến)
+ */
+data class CartItem(
+    @DocumentId val id: String = "",
+    val userId: String = "",
+    val foodId: Int = 0,
+    val toppings: String = "",
+    val quantity: Int = 1,
+    val price: Int = 0,
+    val restaurantName: String = "",
+    val foodName: String = "",
+    val foodEmoji: String = "🍔",
+    val foodBgColorVal: Long = 0xFFFFF3E0L,
+    val foodImageUrl: String = ""
+) {
+    @get:Exclude
+    val foodBgColor: androidx.compose.ui.graphics.Color
+        get() = androidx.compose.ui.graphics.Color(foodBgColorVal.toULong())
+}
+

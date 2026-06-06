@@ -26,19 +26,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.a43_kltn_ttfood.data.model.FoodItem
-import com.example.a43_kltn_ttfood.data.model.sampleFoodItems
+import com.example.a43_kltn_ttfood.data.model.CartItem
+import com.example.a43_kltn_ttfood.data.repository.CartRepository
+import com.example.a43_kltn_ttfood.data.repository.AuthRepository
 import com.example.a43_kltn_ttfood.ui.theme.*
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
-
-data class CartItem(
-    val id: String,
-    val food: FoodItem,
-    val toppings: String,
-    var quantity: Int,
-    val price: Int
-)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -46,13 +40,12 @@ fun CartScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToCheckout: () -> Unit = {}
 ) {
-    val cartItems = remember {
-        mutableStateListOf(
-            CartItem("1", sampleFoodItems[0], "Thêm trân châu đen, ít đá", 2, 55000),
-            CartItem("2", sampleFoodItems[1], "Không hành, không cay", 1, 65000),
-            CartItem("3", sampleFoodItems[2], "Size L", 1, 85000)
-        )
-    }
+    val cartRepo = remember { CartRepository() }
+    val authRepo = remember { AuthRepository() }
+    val coroutineScope = rememberCoroutineScope()
+
+    val userId = authRepo.currentFirebaseUser?.uid ?: ""
+    val cartItems by cartRepo.getCart(userId).collectAsState(initial = emptyList())
 
     var voucherCode by remember { mutableStateOf("") }
     var appliedVoucher by remember { mutableStateOf<String?>(null) }
@@ -82,7 +75,7 @@ fun CartScreen(
                 },
                 actions = {
                     if (cartItems.isNotEmpty()) {
-                        TextButton(onClick = { cartItems.clear() }) {
+                        TextButton(onClick = { coroutineScope.launch { cartRepo.clearCart(userId) } }) {
                             Text("Xóa tất cả", color = ErrorRed, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -156,7 +149,7 @@ fun CartScreen(
                     .padding(paddingValues),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                val groupedItems = cartItems.groupBy { it.food.restaurant }
+                val groupedItems = cartItems.groupBy { it.restaurantName }
 
                 groupedItems.forEach { (restaurantName, restaurantItems) ->
                     item {
@@ -176,18 +169,20 @@ fun CartScreen(
                             item = item,
                             modifier = Modifier,
                             onIncrease = {
-                                val index = cartItems.indexOf(item)
-                                if (index != -1) {
-                                    cartItems[index] = item.copy(quantity = item.quantity + 1)
+                                coroutineScope.launch {
+                                    cartRepo.updateCartItemQuantity(item.id, item.quantity + 1)
                                 }
                             },
                             onDecrease = {
-                                val index = cartItems.indexOf(item)
-                                if (index != -1 && item.quantity > 1) {
-                                    cartItems[index] = item.copy(quantity = item.quantity - 1)
+                                coroutineScope.launch {
+                                    cartRepo.updateCartItemQuantity(item.id, item.quantity - 1)
                                 }
                             },
-                            onDelete = { cartItems.remove(item) }
+                            onDelete = {
+                                coroutineScope.launch {
+                                    cartRepo.deleteCartItem(item.id)
+                                }
+                            }
                         )
                         Divider(color = Gray100)
                     }
@@ -363,17 +358,17 @@ fun CartItemRow(
             modifier = Modifier
                 .size(70.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(item.food.bgColor),
+                .background(item.foodBgColor),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = item.food.emoji, fontSize = 40.sp)
+            Text(text = item.foodEmoji, fontSize = 40.sp)
         }
         
         Spacer(modifier = Modifier.width(16.dp))
         
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = item.food.name,
+                text = item.foodName,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

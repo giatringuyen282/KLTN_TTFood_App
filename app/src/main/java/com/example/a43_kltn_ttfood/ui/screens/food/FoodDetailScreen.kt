@@ -31,6 +31,7 @@ import com.example.a43_kltn_ttfood.data.model.UserRole
 import com.example.a43_kltn_ttfood.data.model.sampleFoodItems
 import com.example.a43_kltn_ttfood.data.repository.AuthRepository
 import com.example.a43_kltn_ttfood.data.repository.FoodRepository
+import com.example.a43_kltn_ttfood.data.repository.CartRepository
 import com.example.a43_kltn_ttfood.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -43,6 +44,7 @@ fun FoodDetailScreen(
     val context = LocalContext.current
     val foodRepo = remember { FoodRepository() }
     val authRepo = remember { AuthRepository() }
+    val cartRepo = remember { CartRepository() }
     val scope = rememberCoroutineScope()
 
     // Trạng thái dữ liệu
@@ -147,7 +149,29 @@ fun FoodDetailScreen(
                         ) { Icon(Icons.Default.Add, "Tăng", tint = Orange500, modifier = Modifier.size(18.dp)) }
                     }
                     Button(
-                        onClick = { },
+                        onClick = {
+                            val uid = authRepo.currentFirebaseUser?.uid
+                            if (uid != null) {
+                                scope.launch {
+                                    val result = cartRepo.addToCart(
+                                        userId = uid,
+                                        food = foodData,
+                                        quantity = quantity,
+                                        toppings = ""
+                                    )
+                                    result.fold(
+                                        onSuccess = {
+                                            Toast.makeText(context, "✅ Đã thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        onFailure = { e ->
+                                            Toast.makeText(context, "❌ Lỗi: ${e.message}", Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }
+                            } else {
+                                Toast.makeText(context, "Vui lòng đăng nhập để đặt hàng", Toast.LENGTH_SHORT).show()
+                            }
+                        },
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Orange500),
                         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)
