@@ -625,9 +625,9 @@ class FoodRepository {
     }
 
     /**
-     * Upload ảnh món ăn lên Firebase Storage
-     * Đường dẫn: food_images/{foodId}.jpg
-     * Trả về URL tải xuống công khai
+     * Upload ảnh món ăn lên Firebase Storage.
+     * Đường dẫn lưu trữ: food_images/{foodId}.jpg
+     * Trả về URL tải xuống công khai (download URL).
      */
     suspend fun uploadFoodImage(foodId: Int, imageUri: Uri): Result<String> {
         return try {
@@ -643,15 +643,61 @@ class FoodRepository {
     }
 
     /**
-     * Cập nhật trường imageUrl trong tài liệu Firestore của món ăn
+     * Cập nhật trường imageUrl trong tài liệu Firestore của món ăn (tìm theo foodId Int).
      */
     suspend fun updateFoodImageUrl(foodId: Int, imageUrl: String): Result<Unit> {
         return try {
             val snap = foodCollection.whereEqualTo("id", foodId).limit(1).get().await()
             val docId = snap.documents.firstOrNull()?.id
-                ?: return Result.failure(Exception("Không tìm thấy món ăn"))
+                ?: return Result.failure(Exception("Không tìm thấy món ăn có id=$foodId"))
             foodCollection.document(docId).update("imageUrl", imageUrl).await()
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Hàm tiện lợi: UPLOAD ảnh lên Storage RỒI LƯU URL vào Firestore trong một lần gọi.
+     *
+     * Cách dùng từ ViewModel / Composable:
+     *   val result = foodRepository.uploadImageAndSaveUrl(foodId = 2, imageUri = uri)
+     *   result.onSuccess { url -> /* hiển thị ảnh */ }
+     *         .onFailure { e -> /* báo lỗi */ }
+     *
+     * @param foodId  ID số nguyên của món ăn (trường "id" trong Firestore)
+     * @param imageUri Uri ảnh được chọn từ thiết bị (Intent.ACTION_GET_CONTENT)
+     * @return Result<String> chứa download URL nếu thành công, hoặc Exception nếu thất bại
+     */
+    suspend fun uploadImageAndSaveUrl(foodId: Int, imageUri: Uri): Result<String> {
+        // Bước 1: Upload ảnh lên Firebase Storage
+        val uploadResult = uploadFoodImage(foodId, imageUri)
+        if (uploadResult.isFailure) return uploadResult
+
+        val downloadUrl = uploadResult.getOrThrow()
+
+        // Bước 2: Lưu URL vào Firestore (cập nhật trường imageUrl)
+        val saveResult = updateFoodImageUrl(foodId, downloadUrl)
+        if (saveResult.isFailure) {
+            return Result.failure(
+                saveResult.exceptionOrNull()
+                    ?: Exception("Lưu URL vào Firestore thất bại")
+            )
+        }
+
+        return Result.success(downloadUrl)
+    }
+
+    /**
+     * Tạo mới một món ăn trong Firestore (không kèm ảnh).
+     * Sau khi tạo, gọi uploadImageAndSaveUrl(foodId, uri) để đính kèm ảnh.
+     *
+     * @return Result<String> chứa documentId vừa tạo
+     */
+    suspend fun addFoodItem(food: com.example.a43_kltn_ttfood.data.model.FoodItem): Result<String> {
+        return try {
+            val docRef = foodCollection.add(food).await()
+            Result.success(docRef.id)
         } catch (e: Exception) {
             Result.failure(e)
         }

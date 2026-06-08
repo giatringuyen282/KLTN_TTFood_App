@@ -11,6 +11,7 @@ import androidx.navigation.navArgument
 import com.example.a43_kltn_ttfood.ui.screens.auth.*
 import com.example.a43_kltn_ttfood.ui.screens.category.CategoryScreen
 import com.example.a43_kltn_ttfood.ui.screens.food.FoodDetailScreen
+import com.example.a43_kltn_ttfood.ui.screens.food.UploadFoodImageScreen
 import com.example.a43_kltn_ttfood.ui.screens.home.HomeScreen
 import com.example.a43_kltn_ttfood.ui.screens.notifications.NotificationsScreen
 import com.example.a43_kltn_ttfood.ui.screens.restaurant.RestaurantDetailScreen
@@ -323,6 +324,7 @@ fun TTFoodNavGraph(navController: NavHostController) {
                 onNavigateToRestaurants = { navController.navigate(Screen.AdminRestaurants.route) },
                 onNavigateToVouchers = { navController.navigate(Screen.AdminVouchers.route) },
                 onNavigateToAuditLog = { navController.navigate(Screen.AdminAuditLog.route) },
+                onNavigateToUploadImage = { navController.navigate(Screen.UploadFoodImage.createRoute(2)) },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -389,6 +391,18 @@ fun TTFoodNavGraph(navController: NavHostController) {
         composable(route = Screen.AdminAuditLog.route) {
             AdminAuditLogScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // UploadFoodImage – màn hình upload ảnh món ăn lên Firebase Storage
+        composable(
+            route = Screen.UploadFoodImage.route,
+            arguments = listOf(navArgument("foodId") { type = NavType.IntType; defaultValue = 2 })
+        ) { backStackEntry ->
+            val foodId = backStackEntry.arguments?.getInt("foodId") ?: 2
+            UploadFoodImageScreen(
+                foodId = foodId,
+                onBack = { navController.popBackStack() }
             )
         }
     }

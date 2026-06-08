@@ -50,4 +50,9 @@ sealed class Screen(val route: String) {
     data object AdminRestaurants : Screen("admin_restaurants")
     data object AdminVouchers : Screen("admin_vouchers")
     data object AdminAuditLog : Screen("admin_audit_log")
+
+    // Upload tool (dùng nhập ảnh vào Firebase Storage)
+    data object UploadFoodImage : Screen("upload_food_image/{foodId}") {
+        fun createRoute(foodId: Int = 2) = "upload_food_image/$foodId"
+    }
 }

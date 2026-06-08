@@ -49,6 +49,7 @@ fun AdminDashboardScreen(
     onNavigateToRestaurants: () -> Unit,
     onNavigateToVouchers: () -> Unit,
     onNavigateToAuditLog: () -> Unit,
+    onNavigateToUploadImage: () -> Unit = {},   // Upload ảnh món ăn
     onNavigateBack: () -> Unit
 ) {
     val userRepo = remember { UserRepository() }
@@ -209,6 +210,16 @@ fun AdminDashboardScreen(
                     subtitle = "Audit log — ai đã làm gì, khi nào",
                     color = Color(0xFFFF8F00),
                     onClick = onNavigateToAuditLog
+                )
+            }
+
+            item {
+                AdminMenuItem(
+                    icon = Icons.Outlined.Image,
+                    title = "Ảnh món ăn",
+                    subtitle = "Upload ảnh lên Firebase Storage",
+                    color = Color(0xFF6C63FF),
+                    onClick = onNavigateToUploadImage
                 )
             }
 
