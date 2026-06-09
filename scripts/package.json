@@ -1,0 +1,11 @@
+{
+  "name": "ttfood-admin-scripts",
+  "version": "1.0.0",
+  "description": "TTFood Admin Scripts",
+  "scripts": {
+    "create-admin": "node create_admin.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
