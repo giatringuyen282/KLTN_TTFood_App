@@ -29,8 +29,40 @@ fun CategoryScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToFood: (Int) -> Unit = {}
 ) {
-    val category = remember {
-        sampleCategories.find { it.id == categoryId } ?: sampleCategories.first()
+    val categoryRepo = remember { com.example.a43_kltn_ttfood.data.repository.CategoryRepository() }
+    val foodRepo = remember { com.example.a43_kltn_ttfood.data.repository.FoodRepository() }
+
+    var category by remember { mutableStateOf<com.example.a43_kltn_ttfood.data.model.FoodCategory?>(null) }
+    var categoryFoods by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.FoodItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(categoryId) {
+        isLoading = true
+        try {
+            val cat = categoryRepo.getCategoryById(categoryId)
+            if (cat != null) {
+                category = cat
+            } else {
+                val sampleMatch = sampleCategories.find { it.id == categoryId }
+                if (sampleMatch != null) {
+                    category = sampleMatch
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    LaunchedEffect(categoryId) {
+        try {
+            foodRepo.getAllFoodItems().collect { allFoods ->
+                categoryFoods = allFoods.filter { it.categoryId == categoryId.toString() }
+                isLoading = false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            isLoading = false
+        }
     }
 
     Scaffold(
@@ -39,10 +71,10 @@ fun CategoryScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = category.emoji, fontSize = 24.sp)
+                        Text(text = category?.emoji ?: "🍽️", fontSize = 24.sp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = category.name,
+                            text = category?.name ?: "Danh mục",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             )
@@ -64,76 +96,94 @@ fun CategoryScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // For demo, just show all foods
-            items(sampleFoodItems) { food ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToFood(food.id) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Row(
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Orange500)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(categoryFoods) { food ->
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .clickable { onNavigateToFood(food.id) },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .size(64.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(food.bgColor),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = food.emoji, fontSize = 32.sp)
-                        }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = food.name,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = food.restaurant,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Gray500
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(food.bgColor),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (food.imageUrl.isNotBlank()) {
+                                    coil.compose.AsyncImage(
+                                        model = food.imageUrl,
+                                        contentDescription = food.name,
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Text(text = food.emoji, fontSize = 32.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = food.price,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                    text = food.name,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
-                                    color = Orange500
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = food.restaurant,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Gray500
+                                )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = WarningYellow,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(2.dp))
                                     Text(
-                                        text = "${food.rating}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Gray600
+                                        text = food.formattedPrice,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = Orange500
                                     )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = WarningYellow,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(
+                                            text = "${food.rating}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Gray600
+                                        )
+                                    }
                                 }
                             }
                         }

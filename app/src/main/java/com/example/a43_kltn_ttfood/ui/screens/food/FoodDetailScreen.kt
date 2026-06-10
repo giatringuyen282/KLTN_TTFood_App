@@ -177,7 +177,7 @@ fun FoodDetailScreen(
                         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)
                     ) {
                         Text(
-                            "Thêm vào giỏ · ${foodData.price}",
+                            "Thêm vào giỏ · ${foodData.formattedPrice}",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                             color = White
                         )
@@ -267,7 +267,7 @@ fun FoodDetailScreen(
                             modifier = Modifier.weight(1f, false)
                         )
                         Text(
-                            foodData.price,
+                            foodData.formattedPrice,
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = Orange500
                         )

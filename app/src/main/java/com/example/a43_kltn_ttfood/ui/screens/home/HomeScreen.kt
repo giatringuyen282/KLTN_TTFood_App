@@ -56,11 +56,12 @@ import java.util.Calendar
 fun HomeScreen(
     onNavigateToSearch: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    onNavigateToRestaurant: (Int) -> Unit = {},
+    onNavigateToRestaurant: (String) -> Unit = {},
     onNavigateToFood: (Int) -> Unit = {},
     onNavigateToCategory: (Int) -> Unit = {},
     onNavigateToCart: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToBannerDetail: (Int) -> Unit = {}
 ) {
     val authRepo = remember { com.example.a43_kltn_ttfood.data.repository.AuthRepository() }
     
@@ -118,7 +119,7 @@ fun HomeScreen(
                         it.name.equals(modelName, ignoreCase = true)
                     }
                     Restaurant(
-                        id = sampleMatch?.id ?: (modelId.toIntOrNull() ?: modelName.hashCode()),
+                        id = modelId.ifBlank { sampleMatch?.id ?: modelName },
                         emoji = modelEmoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
                         name = modelName,
                         rating = model.rating.toFloat(),
@@ -126,7 +127,9 @@ fun HomeScreen(
                         deliveryTime = sampleMatch?.deliveryTime ?: "15-20 min",
                         badge = if (model.isOpen) null else "Đóng cửa",
                         colorStart = sampleMatch?.colorStart ?: Orange500,
-                        colorEnd = sampleMatch?.colorEnd ?: Orange500
+                        colorEnd = sampleMatch?.colorEnd ?: Orange500,
+                        logo = model.logo.orEmpty(),
+                        coverImage = model.coverImage.orEmpty()
                     )
                 }
             }
@@ -194,7 +197,10 @@ fun HomeScreen(
 
             // Banner Carousel
             item {
-                BannerCarousel(banners = sampleBanners)
+                BannerCarousel(
+                    banners = sampleBanners,
+                    onBannerClick = onNavigateToBannerDetail
+                )
             }
 
             // Categories
@@ -523,7 +529,10 @@ private fun SearchBarSection(onClick: () -> Unit) {
 // Banner Carousel
 // ==============================
 @Composable
-private fun BannerCarousel(banners: List<Banner>) {
+private fun BannerCarousel(
+    banners: List<Banner>,
+    onBannerClick: (Int) -> Unit
+) {
     val pagerState = rememberPagerState(pageCount = { banners.size })
 
     // Auto-scroll
@@ -547,7 +556,10 @@ private fun BannerCarousel(banners: List<Banner>) {
             pageSpacing = 12.dp
         ) { page ->
             val banner = banners[page]
-            BannerCard(banner = banner)
+            BannerCard(
+                banner = banner,
+                onClick = { onBannerClick(banner.id) }
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -578,7 +590,10 @@ private fun BannerCarousel(banners: List<Banner>) {
 }
 
 @Composable
-private fun BannerCard(banner: Banner) {
+private fun BannerCard(
+    banner: Banner,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -589,7 +604,7 @@ private fun BannerCard(banner: Banner) {
                     colors = listOf(banner.colorStart, banner.colorEnd)
                 )
             )
-            .clickable { /* TODO: Open promo */ }
+            .clickable(onClick = onClick)
             .padding(24.dp)
     ) {
         Column(
@@ -801,7 +816,7 @@ private fun FoodItemCard(food: FoodItem, onClick: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = food.price,
+                        text = food.formattedPrice,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -898,7 +913,7 @@ private fun ShimmerFoodRow() {
 @Composable
 private fun RestaurantsRow(
     restaurants: List<Restaurant>,
-    onRestaurantClick: (Int) -> Unit
+    onRestaurantClick: (String) -> Unit
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
@@ -936,7 +951,16 @@ private fun RestaurantCard(restaurant: Restaurant, onClick: () -> Unit) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = restaurant.emoji, fontSize = 48.sp)
+                if (restaurant.logo.isNotBlank()) {
+                    coil.compose.AsyncImage(
+                        model = restaurant.logo,
+                        contentDescription = restaurant.name,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(text = restaurant.emoji, fontSize = 48.sp)
+                }
 
                 // Badge
                 if (restaurant.badge != null) {

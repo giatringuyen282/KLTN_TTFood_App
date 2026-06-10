@@ -57,7 +57,7 @@ class CartRepository {
                     foodId = food.id,
                     toppings = toppings,
                     quantity = quantity,
-                    price = food.price.replace("[^0-9]".toRegex(), "").toIntOrNull() ?: 0,
+                    price = food.price,
                     restaurantName = food.restaurant,
                     foodName = food.name,
                     foodEmoji = food.emoji,

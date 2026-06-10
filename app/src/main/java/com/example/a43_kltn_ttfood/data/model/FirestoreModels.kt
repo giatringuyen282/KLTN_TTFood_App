@@ -281,6 +281,6 @@ data class CartItem(
 ) {
     @get:Exclude
     val foodBgColor: androidx.compose.ui.graphics.Color
-        get() = androidx.compose.ui.graphics.Color(foodBgColorVal.toULong())
+        get() = androidx.compose.ui.graphics.Color(foodBgColorVal.toInt())
 }
 

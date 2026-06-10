@@ -48,15 +48,62 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RestaurantDetailScreen(
-    restaurantId: Int,
+    restaurantId: String,
     onNavigateBack: () -> Unit = {},
     onNavigateToFood: (Int) -> Unit = {}
 ) {
     val cartRepo = remember { CartRepository() }
     val authRepo = remember { AuthRepository() }
-    val restaurant = remember {
-        sampleRestaurants.find { it.id == restaurantId } ?: sampleRestaurants.first()
+    val categoryRepo = remember { com.example.a43_kltn_ttfood.data.repository.CategoryRepository() }
+    val restaurantRepo = remember { com.example.a43_kltn_ttfood.data.repository.RestaurantRepository() }
+    val foodRepo = remember { com.example.a43_kltn_ttfood.data.repository.FoodRepository() }
+
+    var restaurant by remember { mutableStateOf<Restaurant?>(null) }
+    var categories by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.FoodCategory>>(emptyList()) }
+    var restaurantFoods by remember { mutableStateOf<List<FoodItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(restaurantId) {
+        isLoading = true
+        try {
+            val model = restaurantRepo.getRestaurantById(restaurantId)
+            if (model != null) {
+                val modelName = model.name.orEmpty()
+                val sampleMatch = sampleRestaurants.find { it.name.equals(modelName, ignoreCase = true) }
+                restaurant = Restaurant(
+                    id = model.id,
+                    emoji = model.emoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
+                    name = modelName,
+                    rating = model.rating.toFloat(),
+                    distance = sampleMatch?.distance ?: "1.2 km",
+                    deliveryTime = sampleMatch?.deliveryTime ?: "15-20 min",
+                    badge = if (model.isOpen) null else "Đóng cửa",
+                    colorStart = sampleMatch?.colorStart ?: Orange500,
+                    colorEnd = sampleMatch?.colorEnd ?: Orange500,
+                    logo = model.logo,
+                    coverImage = model.coverImage
+                )
+            }
+            categoryRepo.getAllCategories().collect { catList ->
+                categories = catList
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
+        }
     }
+
+    LaunchedEffect(restaurantId) {
+        try {
+            foodRepo.getAllFoodItems().collect { allFoods ->
+                restaurantFoods = allFoods.filter { it.restaurantId == restaurantId }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     var isFavorite by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -64,20 +111,30 @@ fun RestaurantDetailScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Menu categories setup
-    val menuCategories = listOf("Món chính", "Khai vị", "Tráng miệng", "Đồ uống")
-    val categorizedMenu = remember {
-        menuCategories.associateWith { category ->
-            sampleFoodItems.shuffled().take(4) // Mock data per category
+    val menuCategories = remember(restaurantFoods, categories) {
+        categories.filter { category ->
+            restaurantFoods.any { it.categoryId == category.id.toString() }
+        }.map { it.name }
+    }
+
+    val categorizedMenu = remember(restaurantFoods, categories) {
+        categories.filter { category ->
+            restaurantFoods.any { it.categoryId == category.id.toString() }
+        }.associate { category ->
+            category.name to restaurantFoods.filter { it.categoryId == category.id.toString() }
         }
     }
 
     // Compute indices for sticky tabs
-    val categoryIndices = remember { mutableMapOf<Int, Int>() }
-    var currentIndex = 2 // 0: Header, 1: Sticky Tabs
-    menuCategories.forEachIndexed { index, category ->
-        categoryIndices[index] = currentIndex
-        currentIndex += 1 // Category Title
-        currentIndex += categorizedMenu[category]!!.size // Items
+    val categoryIndices = remember(menuCategories, categorizedMenu) {
+        val indices = mutableMapOf<Int, Int>()
+        var currentIndex = 2 // 0: Header, 1: Sticky Tabs
+        menuCategories.forEachIndexed { index, category ->
+            indices[index] = currentIndex
+            currentIndex += 1 // Category Title
+            currentIndex += categorizedMenu[category]?.size ?: 0 // Items
+        }
+        indices
     }
 
     // Auto-update selected tab based on scroll position
@@ -104,7 +161,6 @@ fun RestaurantDetailScreen(
         }
     }
 
-    // Bottom Sheet State
     var selectedFoodForDetail by remember { mutableStateOf<FoodItem?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -114,12 +170,12 @@ fun RestaurantDetailScreen(
             TopAppBar(
                 title = {
                     AnimatedVisibility(
-                        visible = topBarAlpha > 0.8f,
+                        visible = topBarAlpha > 0.8f && restaurant != null,
                         enter = fadeIn(),
                         exit = fadeOut()
                     ) {
                         Text(
-                            text = restaurant.name,
+                            text = restaurant?.name.orEmpty(),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -141,9 +197,10 @@ fun RestaurantDetailScreen(
                     val btnBg = if (topBarAlpha > 0.5f) Color.Transparent else White.copy(alpha = 0.7f)
                     IconButton(
                         onClick = {
+                            val rName = restaurant?.name.orEmpty()
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "Hãy thử món ăn tuyệt vời tại nhà hàng ${restaurant.name} trên ứng dụng TTFood nhé!")
+                                putExtra(Intent.EXTRA_TEXT, "Hãy thử món ăn tuyệt vời tại nhà hàng $rName trên ứng dụng TTFood nhé!")
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, "Chia sẻ nhà hàng")
@@ -168,79 +225,88 @@ fun RestaurantDetailScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 80.dp) // padding for bottom bar
-        ) {
-            // 0: Header
-            item {
-                RestaurantHeroHeader(
-                    restaurant = restaurant,
-                    scrollOffset = if (firstVisibleItemIndex == 0) scrollOffset else 0
-                )
+        if (restaurant == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Orange500)
             }
+        } else {
+            val nonNullRes = restaurant!!
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                item {
+                    RestaurantHeroHeader(
+                        restaurant = nonNullRes,
+                        scrollOffset = if (firstVisibleItemIndex == 0) scrollOffset else 0
+                    )
+                }
 
-            // 1: Sticky Tabs
-            stickyHeader {
-                ScrollableTabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = White,
-                    contentColor = Orange500,
-                    edgePadding = 16.dp,
-                    modifier = Modifier.shadow(elevation = 4.dp)
-                ) {
-                    menuCategories.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = {
-                                selectedTab = index
-                                isTabClicked = true
-                                coroutineScope.launch {
-                                    listState.animateScrollToItem(categoryIndices[index] ?: 0)
-                                    isTabClicked = false
-                                }
-                            },
-                            text = {
-                                Text(
-                                    title,
-                                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (selectedTab == index) Orange500 else Gray600
+                if (menuCategories.isNotEmpty()) {
+                    stickyHeader {
+                        ScrollableTabRow(
+                            selectedTabIndex = selectedTab.coerceIn(0, menuCategories.size - 1),
+                            containerColor = White,
+                            contentColor = Orange500,
+                            edgePadding = 16.dp,
+                            modifier = Modifier.shadow(elevation = 4.dp)
+                        ) {
+                            menuCategories.forEachIndexed { index, title ->
+                                Tab(
+                                    selected = selectedTab == index,
+                                    onClick = {
+                                        selectedTab = index
+                                        isTabClicked = true
+                                        coroutineScope.launch {
+                                            listState.animateScrollToItem(categoryIndices[index] ?: 0)
+                                            isTabClicked = false
+                                        }
+                                    },
+                                    text = {
+                                        Text(
+                                            title,
+                                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (selectedTab == index) Orange500 else Gray600
+                                        )
+                                    }
                                 )
                             }
-                        )
+                        }
                     }
                 }
-            }
 
-            // Menu Items by Category
-            menuCategories.forEachIndexed { index, category ->
-                // Category Title
-                item {
-                    Text(
-                        text = category,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Gray50)
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
+                menuCategories.forEach { category ->
+                    item {
+                        Text(
+                            text = category,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Gray50)
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
 
-                // Foods
-                items(categorizedMenu[category]!!) { food ->
-                    FoodItemHorizontalCard(
-                        food = food,
-                        onClick = { selectedFoodForDetail = food }
-                    )
-                    Divider(color = Gray200, modifier = Modifier.padding(horizontal = 20.dp))
+                    val categoryFoods = categorizedMenu[category] ?: emptyList()
+                    items(categoryFoods) { food ->
+                        FoodItemHorizontalCard(
+                            food = food,
+                            onClick = { selectedFoodForDetail = food }
+                        )
+                        Divider(color = Gray200, modifier = Modifier.padding(horizontal = 20.dp))
+                    }
                 }
             }
         }
     }
 
-    // Food Detail Bottom Sheet
     if (selectedFoodForDetail != null) {
         ModalBottomSheet(
             onDismissRequest = { selectedFoodForDetail = null },
@@ -287,13 +353,12 @@ fun RestaurantHeroHeader(restaurant: Restaurant, scrollOffset: Int) {
             .fillMaxWidth()
             .height(300.dp)
     ) {
-        // Parallax Background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(220.dp)
                 .graphicsLayer {
-                    translationY = scrollOffset * 0.5f // Parallax effect
+                    translationY = scrollOffset * 0.5f
                 }
                 .background(
                     brush = Brush.horizontalGradient(
@@ -302,10 +367,19 @@ fun RestaurantHeroHeader(restaurant: Restaurant, scrollOffset: Int) {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = restaurant.emoji, fontSize = 100.sp, modifier = Modifier.alpha(0.5f))
+            if (restaurant.coverImage.isNotBlank()) {
+                coil.compose.AsyncImage(
+                    model = restaurant.coverImage,
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                    alpha = 0.85f
+                )
+            } else {
+                Text(text = restaurant.emoji, fontSize = 100.sp, modifier = Modifier.alpha(0.5f))
+            }
         }
 
-        // Info Card overlapping
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -339,7 +413,6 @@ fun RestaurantHeroHeader(restaurant: Restaurant, scrollOffset: Int) {
                             )
                         }
                     }
-                    // Logo Avatar
                     Box(
                         modifier = Modifier
                             .size(64.dp)
@@ -348,7 +421,16 @@ fun RestaurantHeroHeader(restaurant: Restaurant, scrollOffset: Int) {
                             .border(2.dp, Gray200, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = restaurant.emoji, fontSize = 32.sp)
+                        if (restaurant.logo.isNotBlank()) {
+                            coil.compose.AsyncImage(
+                                model = restaurant.logo,
+                                contentDescription = restaurant.name,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text(text = restaurant.emoji, fontSize = 32.sp)
+                        }
                     }
                 }
 
@@ -436,7 +518,7 @@ fun FoodItemHorizontalCard(food: FoodItem, onClick: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = food.price,
+                    text = food.formattedPrice,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = Orange500
                 )
@@ -569,7 +651,7 @@ fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: (Int, String) -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = food.price,
+                    text = food.formattedPrice,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = Orange500
                 )
@@ -666,8 +748,7 @@ fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: (Int, String) -> Unit) {
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
-                // Add Button
-                val unitPrice = food.price.replace("[^0-9]".toRegex(), "").toIntOrNull() ?: 55000
+                val unitPrice = food.price
                 val totalPrice = quantity * unitPrice
                 val formattedPrice = String.format("%,dđ", totalPrice).replace(",", ".")
                 Button(

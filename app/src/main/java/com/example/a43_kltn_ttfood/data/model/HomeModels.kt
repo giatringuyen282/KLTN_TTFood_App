@@ -1,6 +1,7 @@
 package com.example.a43_kltn_ttfood.data.model
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.google.firebase.firestore.Exclude
 
 data class Banner(
@@ -23,18 +24,26 @@ data class FoodItem(
     val emoji: String = "",
     val name: String = "",
     val restaurant: String = "",
-    val price: String = "",
+    val price: Int = 0,
     val rating: Float = 0f,
     val bgColorVal: Long = 0xFFFFF3E0L,
-    val imageUrl: String = ""  // URL ảnh thực tế từ Firebase Storage
+    val imageUrl: String = "",  // URL ảnh thực tế từ Firebase Storage
+    val restaurantId: String = "",
+    val categoryId: String = "",
+    val description: String = ""
 ) {
+    // Helper property to expose formatted price string for display in UI
+    @get:Exclude
+    val formattedPrice: String
+        get() = String.format(java.util.Locale.US, "%,d₫", price).replace(",", ".")
+
     // Secondary constructor for compatibility with Color in sample data and existing code
     constructor(
         id: Int,
         emoji: String,
         name: String,
         restaurant: String,
-        price: String,
+        priceStr: String,
         rating: Float,
         bgColor: Color = Color(0xFFFFF3E0)
     ) : this(
@@ -42,20 +51,23 @@ data class FoodItem(
         emoji = emoji,
         name = name,
         restaurant = restaurant,
-        price = price,
+        price = priceStr.replace("[^0-9]".toRegex(), "").toIntOrNull() ?: 0,
         rating = rating,
-        bgColorVal = bgColor.value.toLong(),
-        imageUrl = ""
+        bgColorVal = bgColor.toArgb().toLong(),
+        imageUrl = "",
+        restaurantId = "",
+        categoryId = "",
+        description = ""
     )
 
     // Expose bgColor property so all existing UI layout references continue to work
     @get:Exclude
     val bgColor: Color
-        get() = Color(bgColorVal.toULong())
+        get() = Color(bgColorVal.toInt())
 }
 
 data class Restaurant(
-    val id: Int = 0,
+    val id: String = "",
     val emoji: String = "",
     val name: String = "",
     val rating: Float = 0f,
@@ -63,7 +75,9 @@ data class Restaurant(
     val deliveryTime: String = "",
     val badge: String? = null,
     val colorStart: Color = Color(0xFFFF6B35),
-    val colorEnd: Color = Color(0xFFE53935)
+    val colorEnd: Color = Color(0xFFE53935),
+    val logo: String = "",
+    val coverImage: String = ""
 )
 
 data class ReorderItem(
@@ -106,11 +120,11 @@ val sampleFoodItems = listOf(
 )
 
 val sampleRestaurants = listOf(
-    Restaurant(1, "🍜🍲", "Phở 24 Nguyễn Văn Cừ", 4.8f, "0.8 km", "15-20 phút", "Phổ biến", Color(0xFFFF6B35), Color(0xFFE53935)),
-    Restaurant(2, "🍕🧀", "Pizza Hut Quận 5", 4.5f, "1.2 km", "25-30 phút", "Giảm 20%", Color(0xFF7C4DFF), Color(0xFF536DFE)),
-    Restaurant(3, "🍗🔥", "KFC Nguyễn Trãi", 4.3f, "2.0 km", "20-25 phút", "Mới", Color(0xFF00BFA5), Color(0xFF1DE9B6)),
-    Restaurant(4, "🍔🍟", "McDonald's Quận 1", 4.6f, "1.5 km", "18-25 phút", null, Color(0xFFE91E63), Color(0xFFFF6090)),
-    Restaurant(5, "🧋🍵", "Phúc Long Heritage", 4.7f, "0.5 km", "10-15 phút", "Phổ biến", Color(0xFFFF8F00), Color(0xFFFFB300))
+    Restaurant("1", "🍜🍲", "Phở 24 Nguyễn Văn Cừ", 4.8f, "0.8 km", "15-20 phút", "Phổ biến", Color(0xFFFF6B35), Color(0xFFE53935)),
+    Restaurant("2", "🍕🧀", "Pizza Hut Quận 5", 4.5f, "1.2 km", "25-30 phút", "Giảm 20%", Color(0xFF7C4DFF), Color(0xFF536DFE)),
+    Restaurant("3", "🍗🔥", "KFC Nguyễn Trãi", 4.3f, "2.0 km", "20-25 phút", "Mới", Color(0xFF00BFA5), Color(0xFF1DE9B6)),
+    Restaurant("4", "🍔🍟", "McDonald's Quận 1", 4.6f, "1.5 km", "18-25 phút", null, Color(0xFFE91E63), Color(0xFFFF6090)),
+    Restaurant("5", "🧋🍵", "Phúc Long Heritage", 4.7f, "0.5 km", "10-15 phút", "Phổ biến", Color(0xFFFF8F00), Color(0xFFFFB300))
 )
 
 val sampleReorders = listOf(

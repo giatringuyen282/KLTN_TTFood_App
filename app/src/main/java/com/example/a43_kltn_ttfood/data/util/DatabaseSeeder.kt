@@ -17,7 +17,7 @@ object DatabaseSeeder {
 
     // ─── Sentinel key để biết đã seed version này chưa ───────────────────────
     private val metaCol = db.collection("_meta")
-    private const val SEED_VERSION = "v3_real_data_8restaurants"
+    private const val SEED_VERSION = "v5_update_missing_urls"
 
     /**
      * Gọi khi app khởi động.
@@ -47,10 +47,12 @@ object DatabaseSeeder {
         deleteCollection("categories")
         deleteCollection("food_items")
         deleteCollection("restaurants")
+        deleteCollection("vouchers")
 
         seedCategories()
         val restaurantIds = seedRestaurants()
         seedFoodItems(restaurantIds)
+        seedVouchers()
 
         // Lưu version đã seed
         metaCol.document("seed").set(mapOf("version" to SEED_VERSION)).await()
@@ -93,7 +95,7 @@ object DatabaseSeeder {
     // RESTAURANTS — trả về Map<tên ngắn → documentId>
     // ─────────────────────────────────────────────────────────────────────────
     private suspend fun seedRestaurants(): Map<String, String> {
-        val restaurants = listOf(
+        val restaurants: List<Map<String, Any>> = listOf(
             mapOf(
                 "name" to "KFC",
                 "description" to "Gà rán giòn nức tiếng thế giới, kết hợp với burger, cơm và đồ uống đặc sắc.",
@@ -218,10 +220,12 @@ object DatabaseSeeder {
 
         val idMap = mutableMapOf<String, String>()
         restaurants.forEach { restaurant ->
-            val docRef = restaurantsCol.add(restaurant).await()
+            val mutableRes = restaurant.toMutableMap()
+            mutableRes["createdAt"] = com.google.firebase.Timestamp.now()
+            val docRef = restaurantsCol.add(mutableRes).await()
             idMap[restaurant["name"] as String] = docRef.id
         }
-        Log.d("DatabaseSeeder", "Seeded ${restaurants.size} restaurants")
+        Log.d("DatabaseSeeder", "Seeded ${restaurants.size} restaurants with createdAt timestamps")
         return idMap
     }
 
@@ -364,8 +368,17 @@ object DatabaseSeeder {
                 "https://comnieuthienly.com/_next/image?url=https%3A%2F%2Fhos.comnieuthienly.com%2Fimages%2Fwebp%2F6a100e959b9d1f6080fb6579.jpg&w=1920&q=75",
                 "🍽️", "Combo đặc biệt nhiều món cao cấp nhất của nhà hàng", listOf("Signature"), "Cơm Niêu Thiên Lý"),
             food(idCounter++, cntlId, "4", "Cơm Niêu Tôm Sú", 99000, 105000,
-                "https://comnieuthienly.com/_next/image?url=https%3A%2F%2Fhos.comnieuthienly.com%2Fimages%2Fwebp%2F6a100e969b9d1f6080fb657e.jpg&w=1920&q=75",
-                "🦐", "Tôm sú tươi ngon nướng mỡ hành ăn kèm cơm niêu", listOf("Mới"), "Cơm Niêu Thiên Lý")
+                "https://comnieuthienly.com/_next/image?url=https%3A%2F%2Fhos.comnieuthienly.com%2Fimages%2Fwebp%2F6a100e969b9d1e679b9d1f6080fb657e.jpg&w=1920&q=75",
+                "🦐", "Tôm sú tươi ngon nướng mỡ hành ăn kèm cơm niêu", listOf("Mới"), "Cơm Niêu Thiên Lý"),
+            food(idCounter++, cntlId, "4", "Cơm Niêu Thịt Kho Tàu", 75000, 75000,
+                "https://comnieuthienly.com/_next/image?url=https%3A%2F%2Fhos.comnieuthienly.com%2Fimages%2Fwebp%2F6a100e679b9d1f6080fb6571.jpg&w=1920&q=75",
+                "🐷", "Thịt kho tàu nước dừa béo ngọt ăn kèm trứng luộc", emptyList(), "Cơm Niêu Thiên Lý"),
+            food(idCounter++, cntlId, "4", "Cơm Niêu Gà Sốt Nấm", 80000, 85000,
+                "https://comnieuthienly.com/_next/image?url=https%3A%2F%2Fhos.comnieuthienly.com%2Fimages%2Fwebp%2F6a100eb99b9d1e5cac68f4cf.jpg&w=1920&q=75",
+                "🐔", "Gà fillet mềm sốt nấm hương đậm đà, bổ dưỡng", emptyList(), "Cơm Niêu Thiên Lý"),
+            food(idCounter++, cntlId, "4", "Cơm Niêu Bò Sốt Tiêu", 89000, 95000,
+                "https://comnieuthienly.com/_next/image?url=https%3A%2F%2Fhos.comnieuthienly.com%2Fimages%2Fwebp%2F6a100eba9b9d1e5cac68f4d1.jpg&w=1920&q=75",
+                "🥩", "Thịt bò né sốt tiêu đen cay nồng, thơm ngậy chảo nóng", listOf("Bán chạy"), "Cơm Niêu Thiên Lý")
         )
 
         // Phở Tráng — danh mục 5 (Phở & Bún)
@@ -419,6 +432,9 @@ object DatabaseSeeder {
             food(idCounter++, p4pId, "6", "Pizza Margherita", 199000, 199000,
                 "https://pizza4ps.com/wp-content/uploads/2023/07/30000304_2-560x560.jpg",
                 "🍅", "Pizza Margherita cổ điển: sốt cà chua, phô mai mozzarella", emptyList(), "Pizza 4P's"),
+            food(idCounter++, p4pId, "6", "Pizza Thịt Nguội Burrata", 259000, 289000,
+                "https://pizza4ps.com/wp-content/uploads/2023/07/30000305_2-560x560.jpg",
+                "🍕", "Pizza thịt nguội Parma Ham kết hợp phô mai Burrata tươi béo ngậy", listOf("Bán chạy"), "Pizza 4P's"),
             food(idCounter++, p4pId, "9", "Yuzu Dessert", 79000, 85000,
                 "https://pizza4ps.com/wp-content/uploads/2023/07/Thiet-ke-chua-co-ten-6.png",
                 "🍋", "Bánh tráng miệng yuzu chua nhẹ, thanh mát", listOf("Mới"), "Pizza 4P's"),
@@ -488,7 +504,7 @@ object DatabaseSeeder {
                 "https://pepper-lunch.vn/uploads/products/com-trung-pho-mai-voi-ga-202302111742_thumb.png",
                 "🍳", "Cơm gà phô mai kết hợp trứng tươi trộn đều trên chảo nóng", emptyList()),
             food(idCounter++, pplId, "8", "Cơm Cà Ri Bò Xúc Xích", 169000, 179000,
-                "https://pepper-lunch.vn/uploads/products/com-ca-ri-bo-voi-xuc-xich-202302111745_thumb.png",
+                "https://pepper-lunch.vn/uploads/products/com-ca-ri-bo-voi-xuc-xich-pho-mai-202302111745_thumb.png",
                 "🌭", "Cà ri bò đậm vị kết hợp xúc xích phô mai Đức", listOf("Phổ biến")),
             food(idCounter++, pplId, "8", "Mì Ý Gà Aglio Olio", 149000, 159000,
                 "https://pepper-lunch.vn/uploads/products/my-y-ga-aglio-olio-202208230730_thumb.png",
@@ -532,4 +548,62 @@ object DatabaseSeeder {
         "badges" to badges,
         "toppingGroupIds" to emptyList<String>()
     )
+
+    private suspend fun seedVouchers() {
+        val vouchersCol = db.collection("vouchers")
+        val vouchers = listOf(
+            mapOf(
+                "code" to "TTFOOD50",
+                "discountType" to "fixed",
+                "discountValue" to 50000,
+                "minOrder" to 100000,
+                "maxDiscount" to 50000,
+                "usageLimit" to 1000,
+                "usedCount" to 0,
+                "isActive" to true,
+                "expiresAt" to com.google.firebase.Timestamp(java.util.Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)),
+                "createdAt" to com.google.firebase.Timestamp.now()
+            ),
+            mapOf(
+                "code" to "PIZZA50",
+                "discountType" to "percent",
+                "discountValue" to 50,
+                "minOrder" to 150000,
+                "maxDiscount" to 75000,
+                "usageLimit" to 1000,
+                "usedCount" to 0,
+                "isActive" to true,
+                "expiresAt" to com.google.firebase.Timestamp(java.util.Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)),
+                "createdAt" to com.google.firebase.Timestamp.now()
+            ),
+            mapOf(
+                "code" to "FREESHIP",
+                "discountType" to "fixed",
+                "discountValue" to 15000,
+                "minOrder" to 50000,
+                "maxDiscount" to 15000,
+                "usageLimit" to 2000,
+                "usedCount" to 0,
+                "isActive" to true,
+                "expiresAt" to com.google.firebase.Timestamp(java.util.Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)),
+                "createdAt" to com.google.firebase.Timestamp.now()
+            ),
+            mapOf(
+                "code" to "KFC20",
+                "discountType" to "percent",
+                "discountValue" to 20,
+                "minOrder" to 80000,
+                "maxDiscount" to 30000,
+                "usageLimit" to 1000,
+                "usedCount" to 0,
+                "isActive" to true,
+                "expiresAt" to com.google.firebase.Timestamp(java.util.Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)),
+                "createdAt" to com.google.firebase.Timestamp.now()
+            )
+        )
+        for (v in vouchers) {
+            vouchersCol.add(v).await()
+        }
+        Log.d("DatabaseSeeder", "Seeded ${vouchers.size} vouchers")
+    }
 }

@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 fun SearchScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToFood: (Int) -> Unit = {},
-    onNavigateToRestaurant: (Int) -> Unit = {}
+    onNavigateToRestaurant: (String) -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var debouncedQuery by remember { mutableStateOf("") }
@@ -392,7 +392,7 @@ fun FoodSearchResultItem(food: FoodItem, query: String, onClick: () -> Unit) {
                 Spacer(Modifier.height(4.dp))
                 Text(text = food.restaurant, style = MaterialTheme.typography.bodySmall, color = Gray600)
             }
-            Text(food.price, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Orange500)
+            Text(food.formattedPrice, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Orange500)
         }
     }
 }

@@ -19,13 +19,16 @@ sealed class Screen(val route: String) {
     data object Search : Screen("search")
     data object Notifications : Screen("notifications")
     data object RestaurantDetail : Screen("restaurant_detail/{restaurantId}") {
-        fun createRoute(restaurantId: Int) = "restaurant_detail/$restaurantId"
+        fun createRoute(restaurantId: String) = "restaurant_detail/$restaurantId"
     }
     data object FoodDetail : Screen("food_detail/{foodId}") {
         fun createRoute(foodId: Int) = "food_detail/$foodId"
     }
     data object Category : Screen("category/{categoryId}") {
         fun createRoute(categoryId: Int) = "category/$categoryId"
+    }
+    data object BannerDetail : Screen("banner_detail/{bannerId}") {
+        fun createRoute(bannerId: Int) = "banner_detail/$bannerId"
     }
     data object Cart : Screen("cart")
     data object Checkout : Screen("checkout")

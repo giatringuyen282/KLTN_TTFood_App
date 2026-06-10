@@ -22,6 +22,7 @@ import com.example.a43_kltn_ttfood.ui.screens.checkout.OrderSuccessScreen
 import com.example.a43_kltn_ttfood.ui.screens.tracking.OrderTrackingScreen
 import com.example.a43_kltn_ttfood.ui.screens.profile.*
 import com.example.a43_kltn_ttfood.ui.screens.admin.*
+import com.example.a43_kltn_ttfood.ui.screens.banner.BannerDetailScreen
 
 @Composable
 fun TTFoodNavGraph(navController: NavHostController) {
@@ -163,7 +164,10 @@ fun TTFoodNavGraph(navController: NavHostController) {
                     navController.navigate(Screen.Category.createRoute(categoryId)) 
                 },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
-                onNavigateToProfile = { navController.navigate(Screen.ProfileDashboard.route) }
+                onNavigateToProfile = { navController.navigate(Screen.ProfileDashboard.route) },
+                onNavigateToBannerDetail = { bannerId ->
+                    navController.navigate(Screen.BannerDetail.createRoute(bannerId))
+                }
             )
         }
 
@@ -190,9 +194,9 @@ fun TTFoodNavGraph(navController: NavHostController) {
         // Restaurant Detail
         composable(
             route = Screen.RestaurantDetail.route,
-            arguments = listOf(navArgument("restaurantId") { type = NavType.IntType })
+            arguments = listOf(navArgument("restaurantId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val restaurantId = backStackEntry.arguments?.getInt("restaurantId") ?: 0
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId").orEmpty()
             RestaurantDetailScreen(
                 restaurantId = restaurantId,
                 onNavigateBack = { navController.popBackStack() },
@@ -222,6 +226,21 @@ fun TTFoodNavGraph(navController: NavHostController) {
             val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 0
             CategoryScreen(
                 categoryId = categoryId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFood = { foodId -> 
+                    navController.navigate(Screen.FoodDetail.createRoute(foodId)) 
+                }
+            )
+        }
+
+        // Banner Detail Screen
+        composable(
+            route = Screen.BannerDetail.route,
+            arguments = listOf(navArgument("bannerId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val bannerId = backStackEntry.arguments?.getInt("bannerId") ?: 0
+            BannerDetailScreen(
+                bannerId = bannerId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToFood = { foodId -> 
                     navController.navigate(Screen.FoodDetail.createRoute(foodId)) 

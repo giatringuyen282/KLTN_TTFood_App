@@ -576,7 +576,7 @@ fun FavoriteItemCard(food: FoodItem, modifier: Modifier = Modifier, onRemove: ()
                 Text(food.name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 Text(food.restaurant, style = MaterialTheme.typography.bodySmall, color = Gray600)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(food.price, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Orange500)
+                Text(food.formattedPrice, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Orange500)
             }
             IconButton(onClick = onRemove, modifier = Modifier.size(36.dp).clip(CircleShape).background(ErrorRed.copy(alpha = 0.1f))) {
                 Icon(Icons.Default.Favorite, "Bỏ thích", tint = ErrorRed, modifier = Modifier.size(20.dp))
