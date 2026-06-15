@@ -25,12 +25,14 @@ data class FoodItem(
     val name: String = "",
     val restaurant: String = "",
     val price: Int = 0,
+    val originalPrice: Int = 0,
     val rating: Float = 0f,
     val bgColorVal: Long = 0xFFFFF3E0L,
     val imageUrl: String = "",  // URL ảnh thực tế từ Firebase Storage
     val restaurantId: String = "",
     val categoryId: String = "",
-    val description: String = ""
+    val description: String = "",
+    val toppingGroupIds: List<String> = emptyList()
 ) {
     // Helper property to expose formatted price string for display in UI
     @get:Exclude
@@ -52,12 +54,14 @@ data class FoodItem(
         name = name,
         restaurant = restaurant,
         price = priceStr.replace("[^0-9]".toRegex(), "").toIntOrNull() ?: 0,
+        originalPrice = priceStr.replace("[^0-9]".toRegex(), "").toIntOrNull() ?: 0,
         rating = rating,
         bgColorVal = bgColor.toArgb().toLong(),
         imageUrl = "",
         restaurantId = "",
         categoryId = "",
-        description = ""
+        description = "",
+        toppingGroupIds = emptyList()
     )
 
     // Expose bgColor property so all existing UI layout references continue to work
@@ -71,6 +75,7 @@ data class Restaurant(
     val emoji: String = "",
     val name: String = "",
     val rating: Float = 0f,
+    val reviewCount: Int = 0,
     val distance: String = "",
     val deliveryTime: String = "",
     val badge: String? = null,
@@ -120,11 +125,10 @@ val sampleFoodItems = listOf(
 )
 
 val sampleRestaurants = listOf(
-    Restaurant("1", "🍜🍲", "Phở 24 Nguyễn Văn Cừ", 4.8f, "0.8 km", "15-20 phút", "Phổ biến", Color(0xFFFF6B35), Color(0xFFE53935)),
-    Restaurant("2", "🍕🧀", "Pizza Hut Quận 5", 4.5f, "1.2 km", "25-30 phút", "Giảm 20%", Color(0xFF7C4DFF), Color(0xFF536DFE)),
-    Restaurant("3", "🍗🔥", "KFC Nguyễn Trãi", 4.3f, "2.0 km", "20-25 phút", "Mới", Color(0xFF00BFA5), Color(0xFF1DE9B6)),
-    Restaurant("4", "🍔🍟", "McDonald's Quận 1", 4.6f, "1.5 km", "18-25 phút", null, Color(0xFFE91E63), Color(0xFFFF6090)),
-    Restaurant("5", "🧋🍵", "Phúc Long Heritage", 4.7f, "0.5 km", "10-15 phút", "Phổ biến", Color(0xFFFF8F00), Color(0xFFFFB300))
+    Restaurant(id = "1", emoji = "🍚🍗", name = "Cơm Gà Mâm Tỏi Chị Đẹp", rating = 4.7f, reviewCount = 1200, distance = "1.5 km", deliveryTime = "27 phút trở lên", badge = "Chỉ có trên Grab", colorStart = Color(0xFFFF6B35), colorEnd = Color(0xFFE53935)),
+    Restaurant(id = "2", emoji = "🍗🔥", name = "Gà Nướng Lu Hoàng Côn Lôn", rating = 4.6f, reviewCount = 950, distance = "1.8 km", deliveryTime = "24 phút trở lên", badge = "Chỉ có trên Grab", colorStart = Color(0xFF7C4DFF), colorEnd = Color(0xFF536DFE)),
+    Restaurant(id = "3", emoji = "🍗🍟", name = "KFC - Đường Lê Văn Sỹ", rating = 4.4f, reviewCount = 8500, distance = "2.0 km", deliveryTime = "26 phút trở lên", badge = null, colorStart = Color(0xFF00BFA5), colorEnd = Color(0xFF1DE9B6)),
+    Restaurant(id = "4", emoji = "🍚🥩", name = "Cơm Tấm Nè - Sườn Nướng", rating = 4.5f, reviewCount = 450, distance = "2.5 km", deliveryTime = "36 phút trở lên", badge = null, colorStart = Color(0xFFE91E63), colorEnd = Color(0xFFFF6090))
 )
 
 val sampleReorders = listOf(

@@ -703,3 +703,24 @@ class FoodRepository {
         }
     }
 }
+
+// ==============================
+// Topping Group Repository
+// ==============================
+class ToppingGroupRepository {
+    private val db = FirebaseFirestore.getInstance()
+    private val toppingGroupsCollection = db.collection("topping_groups")
+
+    /** Get topping groups by a list of document IDs */
+    suspend fun getToppingGroupsByIds(ids: List<String>): List<com.example.a43_kltn_ttfood.data.model.ToppingGroup> {
+        if (ids.isEmpty()) return emptyList()
+        return try {
+            toppingGroupsCollection.whereIn(com.google.firebase.firestore.FieldPath.documentId(), ids).get().await()
+                .documents.mapNotNull { it.toObjectSafe(com.example.a43_kltn_ttfood.data.model.ToppingGroup::class.java) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+}
+

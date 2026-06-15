@@ -23,6 +23,13 @@ val Red600 = Color(0xFFC62828)         // Dark red
 val GradientStart = Orange500           // Gradient cam
 val GradientEnd = Red500                // Gradient đỏ
 
+// GrabFood-style Green Colors
+val GrabGreen = Color(0xFF00B14F)       // Primary green (main brand)
+val GrabGreenDark = Color(0xFF00873A)   // Darker green for gradient
+val GrabGreenLight = Color(0xFFE6F9EE)  // Light green background
+val GrabOrange = Color(0xFFF06724)      // Orange for "Đi Ăn Nhà Hàng"
+val PromoRed = Color(0xFFEE4D2D)        // Red for promo tags
+
 // Neutral Colors
 val White = Color(0xFFFFFFFF)
 val Black = Color(0xFF000000)

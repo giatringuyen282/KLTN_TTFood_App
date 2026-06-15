@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -54,6 +55,28 @@ fun FoodDetailScreen(
     var quantity by remember { mutableIntStateOf(1) }
     var isUploading by remember { mutableStateOf(false) }
     var currentImageUrl by remember { mutableStateOf("") }
+
+    val toppingRepo = remember { com.example.a43_kltn_ttfood.data.repository.ToppingGroupRepository() }
+    var foodToppingGroups by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.ToppingGroup>>(emptyList()) }
+    val selectedToppings = remember { mutableStateMapOf<String, String>() }
+
+    LaunchedEffect(food) {
+        val currentFood = food
+        if (currentFood != null && currentFood.toppingGroupIds.isNotEmpty()) {
+            foodToppingGroups = toppingRepo.getToppingGroupsByIds(currentFood.toppingGroupIds)
+        } else {
+            foodToppingGroups = emptyList()
+        }
+    }
+
+    LaunchedEffect(foodToppingGroups) {
+        selectedToppings.clear()
+        foodToppingGroups.forEach { group ->
+            if (group.options.isNotEmpty()) {
+                selectedToppings[group.name] = group.options.first().name
+            }
+        }
+    }
 
     // Tải thông tin món ăn và vai trò người dùng
     LaunchedEffect(foodId) {
@@ -131,56 +154,88 @@ fun FoodDetailScreen(
             )
         },
         bottomBar = {
+            val extraPrice = foodToppingGroups.sumOf { group ->
+                val selectedOptionName = selectedToppings[group.name]
+                group.options.find { it.name == selectedOptionName }?.price ?: 0
+            }
+            val unitPrice = foodData.price + extraPrice
+            val totalPrice = quantity * unitPrice
+            val formattedPrice = String.format("%,dđ", totalPrice).replace(",", ".")
+
             Surface(modifier = Modifier.fillMaxWidth(), shadowElevation = 16.dp, color = White) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        IconButton(
-                            onClick = { if (quantity > 1) quantity-- },
-                            modifier = Modifier.size(36.dp).clip(CircleShape).background(Gray100)
-                        ) { Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Gray700) }
-                        Text("$quantity", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                        IconButton(
-                            onClick = { quantity++ },
-                            modifier = Modifier.size(36.dp).clip(CircleShape).background(Orange100)
-                        ) { Icon(Icons.Default.Add, "Tăng", tint = Orange500, modifier = Modifier.size(18.dp)) }
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Savings bar (if originalPrice > price)
+                    val savings = (foodData.originalPrice - foodData.price) * quantity
+                    if (savings > 0) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFF3ED))
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "Bạn tiết kiệm được ${String.format("%,dđ", savings).replace(",", ".")} sau khi giảm giá.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                color = GrabOrange
+                            )
+                        }
                     }
-                    Button(
-                        onClick = {
-                            val uid = authRepo.currentFirebaseUser?.uid
-                            if (uid != null) {
-                                scope.launch {
-                                    val result = cartRepo.addToCart(
-                                        userId = uid,
-                                        food = foodData,
-                                        quantity = quantity,
-                                        toppings = ""
-                                    )
-                                    result.fold(
-                                        onSuccess = {
-                                            Toast.makeText(context, "✅ Đã thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show()
-                                        },
-                                        onFailure = { e ->
-                                            Toast.makeText(context, "❌ Lỗi: ${e.message}", Toast.LENGTH_LONG).show()
-                                        }
-                                    )
-                                }
-                            } else {
-                                Toast.makeText(context, "Vui lòng đăng nhập để đặt hàng", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Orange500),
-                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            "Thêm vào giỏ · ${foodData.formattedPrice}",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                            color = White
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            IconButton(
+                                onClick = { if (quantity > 1) quantity-- },
+                                modifier = Modifier.size(36.dp).clip(CircleShape).background(Gray100)
+                            ) { Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Gray700) }
+                            Text("$quantity", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            IconButton(
+                                onClick = { quantity++ },
+                                modifier = Modifier.size(36.dp).clip(CircleShape).background(GrabGreen.copy(alpha = 0.1f))
+                            ) { Icon(Icons.Default.Add, "Tăng", tint = GrabGreen, modifier = Modifier.size(18.dp)) }
+                        }
+                        Button(
+                            onClick = {
+                                val uid = authRepo.currentFirebaseUser?.uid
+                                if (uid != null) {
+                                    scope.launch {
+                                        val toppingsResult = if (foodToppingGroups.isNotEmpty()) {
+                                            selectedToppings.values.joinToString(", ")
+                                        } else {
+                                            ""
+                                        }
+                                        val result = cartRepo.addToCart(
+                                            userId = uid,
+                                            food = foodData,
+                                            quantity = quantity,
+                                            toppings = toppingsResult
+                                        )
+                                        result.fold(
+                                            onSuccess = {
+                                                Toast.makeText(context, "✅ Đã thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show()
+                                            },
+                                            onFailure = { e ->
+                                                Toast.makeText(context, "❌ Lỗi: ${e.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        )
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Vui lòng đăng nhập để đặt hàng", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = GrabGreen),
+                            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)
+                        ) {
+                            Text(
+                                "Thêm vào giỏ · $formattedPrice",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = White
+                            )
+                        }
                     }
                 }
             }
@@ -313,6 +368,98 @@ fun FoodDetailScreen(
                         "Món ăn được chế biến từ nguyên liệu tươi ngon, đảm bảo vệ sinh an toàn thực phẩm. Hương vị đậm đà, phù hợp khẩu vị người Việt.",
                         style = MaterialTheme.typography.bodyMedium, color = Gray600, lineHeight = 22.sp
                     )
+                }
+            }
+
+            // ────────────────────────────────────────────────────────
+            // Topping Groups (Options)
+            // ────────────────────────────────────────────────────────
+            if (foodToppingGroups.isNotEmpty()) {
+                foodToppingGroups.forEach { group ->
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(Modifier.padding(20.dp)) {
+                            // Header
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = group.name,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Gray900
+                                )
+                                
+                                val isRequired = group.isRequired || group.name == "main"
+                                val badgeText = if (isRequired) "Chọn 1" else "Đã áp dụng"
+                                val badgeBgColor = if (isRequired) Orange50 else SuccessGreen.copy(alpha = 0.1f)
+                                val badgeTextColor = if (isRequired) Orange500 else SuccessGreen
+                                
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(badgeBgColor)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = badgeText,
+                                        color = badgeTextColor,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // Options
+                            group.options.forEach { option ->
+                                val isSelected = selectedToppings[group.name] == option.name
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedToppings[group.name] = option.name
+                                        }
+                                        .padding(vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { selectedToppings[group.name] = option.name },
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = GrabGreen,
+                                            unselectedColor = Gray300
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = option.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Gray900,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (option.price > 0) {
+                                        Text(
+                                            text = "+${String.format("%,dđ", option.price).replace(",", ".")}",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = Gray700
+                                        )
+                                    }
+                                }
+                                if (option != group.options.last()) {
+                                    HorizontalDivider(color = Gray200, thickness = 0.5.dp)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

@@ -75,6 +75,7 @@ fun RestaurantDetailScreen(
                     emoji = model.emoji.ifBlank { sampleMatch?.emoji ?: "🍽️" },
                     name = modelName,
                     rating = model.rating.toFloat(),
+                    reviewCount = model.reviewCount,
                     distance = sampleMatch?.distance ?: "1.2 km",
                     deliveryTime = sampleMatch?.deliveryTime ?: "15-20 min",
                     badge = if (model.isOpen) null else "Đóng cửa",
@@ -164,6 +165,21 @@ fun RestaurantDetailScreen(
     var selectedFoodForDetail by remember { mutableStateOf<FoodItem?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val toppingRepo = remember { com.example.a43_kltn_ttfood.data.repository.ToppingGroupRepository() }
+    var foodToppingGroups by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.ToppingGroup>>(emptyList()) }
+    var isLoadingToppings by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedFoodForDetail) {
+        val currentFood = selectedFoodForDetail
+        if (currentFood != null && currentFood.toppingGroupIds.isNotEmpty()) {
+            isLoadingToppings = true
+            foodToppingGroups = toppingRepo.getToppingGroupsByIds(currentFood.toppingGroupIds)
+            isLoadingToppings = false
+        } else {
+            foodToppingGroups = emptyList()
+        }
+    }
+
     Scaffold(
         containerColor = Gray50,
         topBar = {
@@ -174,8 +190,14 @@ fun RestaurantDetailScreen(
                         enter = fadeIn(),
                         exit = fadeOut()
                     ) {
+                        val resName = restaurant?.name.orEmpty()
+                        val displayTitle = if (resName.contains(" - ")) {
+                            resName.substringBefore(" - ") + " (" + resName.substringAfter(" - ") + ")"
+                        } else {
+                            resName
+                        }
                         Text(
-                            text = restaurant?.name.orEmpty(),
+                            text = displayTitle,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -316,6 +338,7 @@ fun RestaurantDetailScreen(
         ) {
             FoodDetailBottomSheet(
                 food = selectedFoodForDetail!!,
+                toppingGroups = foodToppingGroups,
                 onAddToCart = { quantity, toppings ->
                     val uid = authRepo.currentFirebaseUser?.uid
                     if (uid != null) {
@@ -397,11 +420,23 @@ fun RestaurantHeroHeader(restaurant: Restaurant, scrollOffset: Int) {
                     verticalAlignment = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        val resName = restaurant.name
+                        val hasBranch = resName.contains(" - ")
+                        val brandName = if (hasBranch) resName.substringBefore(" - ") else resName
+                        val branchName = if (hasBranch) resName.substringAfter(" - ") else ""
                         Text(
-                            text = restaurant.name,
+                            text = brandName,
                             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onBackground
                         )
+                        if (branchName.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "- $branchName",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                color = Gray500
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Star, null, tint = WarningYellow, modifier = Modifier.size(18.dp))
@@ -613,9 +648,34 @@ fun FoodItemHorizontalCard(food: FoodItem, onClick: () -> Unit) {
 }
 
 @Composable
-fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: (Int, String) -> Unit) {
+fun FoodDetailBottomSheet(
+    food: FoodItem,
+    toppingGroups: List<com.example.a43_kltn_ttfood.data.model.ToppingGroup>,
+    onAddToCart: (Int, String) -> Unit
+) {
     var quantity by remember { mutableIntStateOf(1) }
     var selectedSize by remember { mutableStateOf("Vừa") }
+    
+    // Store selected options for each topping group
+    val selectedToppings = remember { mutableStateMapOf<String, String>() }
+    
+    LaunchedEffect(toppingGroups) {
+        selectedToppings.clear()
+        toppingGroups.forEach { group ->
+            if (group.options.isNotEmpty()) {
+                selectedToppings[group.name] = group.options.first().name
+            }
+        }
+    }
+    
+    // Calculate total unit price including toppings
+    val extraPrice = toppingGroups.sumOf { group ->
+        val selectedOptionName = selectedToppings[group.name]
+        group.options.find { it.name == selectedOptionName }?.price ?: 0
+    }
+    val unitPrice = food.price + extraPrice
+    val totalPrice = quantity * unitPrice
+    val formattedPrice = String.format("%,dđ", totalPrice).replace(",", ".")
     
     Column(
         modifier = Modifier
@@ -653,42 +713,120 @@ fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: (Int, String) -> Unit) {
                 Text(
                     text = food.formattedPrice,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Orange500
+                    color = GrabGreen
                 )
             }
             
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Món ăn ngon đậm vị, công thức gia truyền đặc biệt phù hợp với mọi khẩu vị. Nguyên liệu tươi ngon 100%, an toàn vệ sinh thực phẩm.",
+                text = food.description.ifBlank { "Món ăn ngon đậm vị, công thức gia truyền đặc biệt phù hợp với mọi khẩu vị. Nguyên liệu tươi ngon 100%." },
                 style = MaterialTheme.typography.bodyMedium,
                 color = Gray600
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Size Selection
-            Text("Chọn kích cỡ", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf("Nhỏ" to "", "Vừa" to "+0đ", "Lớn" to "+10.000đ").forEach { (size, priceDiff) ->
-                    val isSelected = selectedSize == size
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) Orange500 else Gray200,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .background(if (isSelected) Orange50 else White)
-                            .clickable { selectedSize = size }
-                            .padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+            // Dynamic Topping Groups
+            if (toppingGroups.isNotEmpty()) {
+                toppingGroups.forEach { group ->
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    // Group Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(size, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                        if (priceDiff.isNotEmpty()) {
-                            Text(priceDiff, style = MaterialTheme.typography.labelSmall, color = Gray500)
+                        Text(
+                            text = group.name,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Gray900
+                        )
+                        
+                        // Badge
+                        val isRequired = group.isRequired || group.name == "main"
+                        val badgeText = if (isRequired) "Chọn 1" else "Đã áp dụng"
+                        val badgeBgColor = if (isRequired) Orange50 else SuccessGreen.copy(alpha = 0.1f)
+                        val badgeTextColor = if (isRequired) Orange500 else SuccessGreen
+                        
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(badgeBgColor)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = badgeText,
+                                color = badgeTextColor,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Options
+                    group.options.forEach { option ->
+                        val isSelected = selectedToppings[group.name] == option.name
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedToppings[group.name] = option.name
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = { selectedToppings[group.name] = option.name },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = GrabGreen,
+                                    unselectedColor = Gray300
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = option.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Gray900,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (option.price > 0) {
+                                Text(
+                                    text = "+${String.format("%,dđ", option.price).replace(",", ".")}",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Gray700
+                                )
+                            }
+                        }
+                        HorizontalDivider(color = Gray200, thickness = 0.5.dp)
+                    }
+                }
+            } else {
+                // Fallback to legacy Size Selection
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Chọn kích cỡ", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    listOf("Nhỏ" to "", "Vừa" to "+0đ", "Lớn" to "+10.000đ").forEach { (size, priceDiff) ->
+                        val isSelected = selectedSize == size
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) GrabGreen else Gray200,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .background(if (isSelected) Color(0xFFE8F5E9) else White)
+                                .clickable { selectedSize = size }
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(size, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                            if (priceDiff.isNotEmpty()) {
+                                Text(priceDiff, style = MaterialTheme.typography.labelSmall, color = Gray500)
+                            }
                         }
                     }
                 }
@@ -699,26 +837,38 @@ fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: (Int, String) -> Unit) {
             // Note
             Text("Ghi chú cho quán", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             Spacer(modifier = Modifier.height(12.dp))
+            var noteText by remember { mutableStateOf("") }
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
+                value = noteText,
+                onValueChange = { noteText = it },
                 placeholder = { Text("Ví dụ: Không hành, không cay...") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Orange500,
+                    focusedBorderColor = GrabGreen,
                     unfocusedBorderColor = Gray300
                 )
             )
             
             Spacer(modifier = Modifier.height(32.dp))
             
+            // Savings bar (if originalPrice > price)
+            val savings = (food.originalPrice - food.price) * quantity
+            if (savings > 0) {
+                Text(
+                    text = "Bạn tiết kiệm được ${String.format("%,dđ", savings).replace(",", ".")} sau khi giảm giá.",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Gray900,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+            
             // Add to Cart Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Quantity
+                // Quantity Selector
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -731,33 +881,42 @@ fun FoodDetailBottomSheet(food: FoodItem, onAddToCart: (Int, String) -> Unit) {
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Gray700,
-                        modifier = Modifier.clickable { if (quantity > 1) quantity-- }
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .clickable { if (quantity > 1) quantity-- }
                     )
                     
                     Text(
                         text = "$quantity", 
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     
                     IconButton(
                         onClick = { quantity++ },
-                        modifier = Modifier.size(32.dp).clip(CircleShape).background(Orange500)
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(GrabGreen)
                     ) { Icon(Icons.Default.Add, "Tăng", tint = White, modifier = Modifier.size(16.dp)) }
                 }
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
-                val unitPrice = food.price
-                val totalPrice = quantity * unitPrice
-                val formattedPrice = String.format("%,dđ", totalPrice).replace(",", ".")
                 Button(
-                    onClick = { onAddToCart(quantity, selectedSize) },
+                    onClick = {
+                        val toppingsResult = if (toppingGroups.isNotEmpty()) {
+                            selectedToppings.values.joinToString(", ")
+                        } else {
+                            selectedSize
+                        }
+                        onAddToCart(quantity, toppingsResult)
+                    },
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Orange500)
+                    colors = ButtonDefaults.buttonColors(containerColor = GrabGreen)
                 ) {
-                    Text("Thêm - $formattedPrice", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text("Thêm vào giỏ hàng - $formattedPrice", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = White))
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
