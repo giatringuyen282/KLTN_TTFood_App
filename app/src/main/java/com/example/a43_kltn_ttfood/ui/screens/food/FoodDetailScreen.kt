@@ -56,9 +56,21 @@ fun FoodDetailScreen(
     var isUploading by remember { mutableStateOf(false) }
     var currentImageUrl by remember { mutableStateOf("") }
 
+    val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+    val userId = auth.currentUser?.uid ?: ""
+    val favoriteRepo = remember { com.example.a43_kltn_ttfood.data.repository.FavoriteRepository() }
+
     val toppingRepo = remember { com.example.a43_kltn_ttfood.data.repository.ToppingGroupRepository() }
     var foodToppingGroups by remember { mutableStateOf<List<com.example.a43_kltn_ttfood.data.model.ToppingGroup>>(emptyList()) }
     val selectedToppings = remember { mutableStateMapOf<String, String>() }
+
+    LaunchedEffect(userId, foodId) {
+        if (userId.isNotBlank()) {
+            favoriteRepo.getFavoriteFoodIds(userId).collect { ids ->
+                isFavorite = ids.contains(foodId)
+            }
+        }
+    }
 
     LaunchedEffect(food) {
         val currentFood = food
@@ -142,7 +154,15 @@ fun FoodDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { isFavorite = !isFavorite }) {
+                    IconButton(onClick = { 
+                        if (userId.isNotBlank()) {
+                            scope.launch {
+                                favoriteRepo.toggleFavorite(userId, foodId, !isFavorite)
+                            }
+                        } else {
+                            Toast.makeText(context, "Vui lòng đăng nhập để lưu món yêu thích", Toast.LENGTH_SHORT).show()
+                        }
+                    }) {
                         Icon(
                             if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             "Yêu thích",

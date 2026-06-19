@@ -21,6 +21,7 @@ data class User(
     val fcmToken: String = "",                  // Push notification token
     val dob: String = "",                       // Ngày sinh
     val gender: String = "",                    // Giới tính
+    val address: String = "",                   // Địa chỉ giao hàng mặc định
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
 )
@@ -284,4 +285,14 @@ data class CartItem(
     val foodBgColor: androidx.compose.ui.graphics.Color
         get() = androidx.compose.ui.graphics.Color(foodBgColorVal.toInt())
 }
+
+/**
+ * 📁 favorites collection
+ */
+data class Favorite(
+    @DocumentId val id: String = "",
+    val userId: String = "",
+    val foodId: Int = 0,
+    @ServerTimestamp val createdAt: Timestamp? = null
+)
 

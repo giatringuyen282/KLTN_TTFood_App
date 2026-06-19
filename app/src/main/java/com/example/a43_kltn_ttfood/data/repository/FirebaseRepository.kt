@@ -733,3 +733,60 @@ class ToppingGroupRepository {
     }
 }
 
+// ==============================
+// Favorite Repository
+// ==============================
+class FavoriteRepository {
+    private val db = FirebaseFirestore.getInstance()
+    private val favoritesCollection = db.collection("favorites")
+
+    /**
+     * Lấy danh sách ID các món ăn yêu thích của user
+     */
+    fun getFavoriteFoodIds(userId: String): Flow<List<Int>> = callbackFlow {
+        if (userId.isBlank()) {
+            trySend(emptyList())
+            return@callbackFlow
+        }
+        val listener = favoritesCollection
+            .whereEqualTo("userId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val ids = snapshot?.documents?.mapNotNull {
+                    it.getLong("foodId")?.toInt()
+                } ?: emptyList()
+                trySend(ids)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Thêm hoặc xóa món ăn khỏi danh sách yêu thích
+     */
+    suspend fun toggleFavorite(userId: String, foodId: Int, isFavorite: Boolean): Result<Unit> {
+        return try {
+            if (isFavorite) {
+                // Thêm
+                val docRef = favoritesCollection.document("${userId}_${foodId}")
+                val favorite = com.example.a43_kltn_ttfood.data.model.Favorite(
+                    id = docRef.id,
+                    userId = userId,
+                    foodId = foodId
+                )
+                docRef.set(favorite).await()
+            } else {
+                // Xóa
+                val docRef = favoritesCollection.document("${userId}_${foodId}")
+                docRef.delete().await()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+}
+

@@ -51,9 +51,9 @@ fun CheckoutScreen(
     var selectedTime by remember { mutableStateOf("Giao ngay") }
     var selectedPayment by remember { mutableStateOf("COD") }
     
-    var currentAddress by remember { mutableStateOf("123 Nguyễn Văn Cừ, Phường 4, Quận 5, TP.HCM") }
-    var showAddressDialog by remember { mutableStateOf(false) }
+    var currentAddress by remember { mutableStateOf("Đang tải địa chỉ...") }
     var tempAddress by remember { mutableStateOf("") }
+    var showAddressDialog by remember { mutableStateOf(false) }
     
     var scheduledTime by remember { mutableStateOf("Hôm nay, 19:00") }
     var showTimeDialog by remember { mutableStateOf(false) }
@@ -70,6 +70,12 @@ fun CheckoutScreen(
             userProfile = authRepo.getCurrentUserProfile()
         }
     }
+
+    LaunchedEffect(userProfile) {
+        if (userProfile != null) {
+            currentAddress = userProfile?.address?.takeIf { it.isNotBlank() } ?: "123 Nguyễn Văn Cừ, Quận 5, TP.HCM"
+        }
+    } 
 
     // Calculations
     val subtotal = cartItems.sumOf { it.price * it.quantity }

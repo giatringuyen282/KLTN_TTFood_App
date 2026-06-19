@@ -325,7 +325,12 @@ fun TTFoodNavGraph(navController: NavHostController) {
 
         // Favorites Screen
         composable(route = Screen.Favorites.route) {
-            FavoritesScreen(onNavigateBack = { navController.popBackStack() })
+            FavoritesScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFoodDetail = { foodId ->
+                    navController.navigate(Screen.FoodDetail.createRoute(foodId))
+                }
+            )
         }
 
         // Settings Screen
