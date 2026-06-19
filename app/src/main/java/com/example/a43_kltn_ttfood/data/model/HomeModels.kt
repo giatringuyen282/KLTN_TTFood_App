@@ -1,7 +1,9 @@
 package com.example.a43_kltn_ttfood.data.model
 
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.example.a43_kltn_ttfood.R
 import com.google.firebase.firestore.Exclude
 
 data class Banner(
@@ -10,7 +12,8 @@ data class Banner(
     val title: String = "",
     val subtitle: String = "",
     val colorStart: Color = Color(0xFFFF6B35),
-    val colorEnd: Color = Color(0xFFE53935)
+    val colorEnd: Color = Color(0xFFE53935),
+    @DrawableRes val imageResId: Int = 0  // drawable resource ID for banner image
 )
 
 data class FoodCategory(
@@ -98,10 +101,10 @@ data class ReorderItem(
 // ========================
 
 val sampleBanners = listOf(
-    Banner(1, "🔥🍔", "Giảm 50% Burger", "Chỉ hôm nay!", Color(0xFFFF6B35), Color(0xFFE53935)),
-    Banner(2, "🎉🍕", "Mua 1 tặng 1 Pizza", "Áp dụng đến hết tuần", Color(0xFF7C4DFF), Color(0xFF536DFE)),
-    Banner(3, "🚀💨", "Freeship đơn từ 50K", "Giao nhanh 15 phút", Color(0xFF00BFA5), Color(0xFF1DE9B6)),
-    Banner(4, "🌙🍜", "Đêm khuya giảm 30%", "22h - 2h sáng", Color(0xFFE91E63), Color(0xFFFF6090))
+    Banner(1, "🔥🍔", "Giảm 50% Burger", "Chỉ hôm nay!", Color(0xFFFF6B35), Color(0xFFE53935), R.drawable.banner_burger_sale),
+    Banner(2, "🎉🍕", "Mua 1 tặng 1 Pizza", "Áp dụng đến hết tuần", Color(0xFF7C4DFF), Color(0xFF536DFE), R.drawable.banner_pizza_deal),
+    Banner(3, "🚀💨", "Freeship đơn từ 50K", "Giao nhanh 15 phút", Color(0xFF00BFA5), Color(0xFF1DE9B6), R.drawable.banner_freeship),
+    Banner(4, "🌙🍜", "Đêm khuya giảm 30%", "22h - 2h sáng", Color(0xFFE91E63), Color(0xFFFF6090), R.drawable.banner_nightowl)
 )
 
 val sampleCategories = listOf(

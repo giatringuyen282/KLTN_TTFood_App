@@ -239,7 +239,7 @@ fun HomeScreen(
             // ===== NHÀ HÀNG NỔI BẬT - Danh sách ngang kiểu GrabFood =====
             item {
                 SectionHeader(
-                    title = "Đặt lại lần nữa",
+                    title = "Nhà hàng nổi tiếng tuần này",
                     onViewAll = {}
                 )
             }
@@ -484,7 +484,6 @@ private fun GrabHeader(
                 )
             )
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .statusBarsPadding()
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -500,35 +499,19 @@ private fun GrabHeader(
                     .clickable(onClick = onAddressClick)
                     .padding(vertical = 4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
                         text = "Giao ngay",
                         style = MaterialTheme.typography.labelSmall,
                         color = White.copy(alpha = 0.8f)
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Nhà",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = White
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Outlined.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    Text(
+                        text = "Nhà",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = White
+                    )
                 }
             }
 
@@ -669,41 +652,84 @@ private fun BannerCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .height(160.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(banner.colorStart, banner.colorEnd)
-                    )
-                )
-                .padding(20.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
+            // Background image from drawable
+            if (banner.imageResId != 0) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = banner.imageResId),
+                    contentDescription = banner.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                // Fallback gradient if no image
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(banner.colorStart, banner.colorEnd)
+                            )
+                        )
+                )
+            }
+
+            // Gradient scrim overlay for text readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.15f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Text content on top of scrim
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = banner.emoji,
-                    fontSize = 32.sp
-                )
+                // Badge chip
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = banner.colorStart.copy(alpha = 0.9f),
+                    modifier = Modifier
+                ) {
+                    Text(
+                        text = banner.emoji,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+
                 Column {
                     Text(
                         text = banner.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold
                         ),
-                        color = White
+                        color = White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = banner.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = White.copy(alpha = 0.85f)
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = White.copy(alpha = 0.9f)
                     )
                 }
             }

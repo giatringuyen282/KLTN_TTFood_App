@@ -123,18 +123,48 @@ fun BannerDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 12.dp)
-                        .height(130.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(banner.colorStart, banner.colorEnd)
-                            )
-                        )
-                        .padding(20.dp),
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(20.dp)),
                     contentAlignment = Alignment.CenterStart
                 ) {
+                    // Background image
+                    if (banner.imageResId != 0) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = banner.imageResId),
+                            contentDescription = banner.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(banner.colorStart, banner.colorEnd)
+                                    )
+                                )
+                        )
+                    }
+                    // Gradient scrim
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.55f),
+                                        Color.Black.copy(alpha = 0.1f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
+                    // Text content
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(text = banner.emoji, fontSize = 48.sp)
@@ -142,13 +172,13 @@ fun BannerDetailScreen(
                         Column {
                             Text(
                                 text = banner.title,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                                 color = White
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = banner.subtitle,
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = White.copy(alpha = 0.9f)
                             )
                         }

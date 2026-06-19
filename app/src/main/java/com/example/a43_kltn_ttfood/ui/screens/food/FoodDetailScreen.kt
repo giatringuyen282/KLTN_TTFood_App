@@ -203,7 +203,7 @@ fun FoodDetailScreen(
                                 if (uid != null) {
                                     scope.launch {
                                         val toppingsResult = if (foodToppingGroups.isNotEmpty()) {
-                                            selectedToppings.values.joinToString(", ")
+                                            selectedToppings.map { "${it.key}: ${it.value}" }.joinToString("\n")
                                         } else {
                                             ""
                                         }
@@ -211,7 +211,8 @@ fun FoodDetailScreen(
                                             userId = uid,
                                             food = foodData,
                                             quantity = quantity,
-                                            toppings = toppingsResult
+                                            toppings = toppingsResult,
+                                            unitPrice = unitPrice
                                         )
                                         result.fold(
                                             onSuccess = {
@@ -257,10 +258,18 @@ fun FoodDetailScreen(
                     .background(foodData.bgColor),
                 contentAlignment = Alignment.Center
             ) {
-                // Hiển thị ảnh thực nếu có URL, nếu không dùng emoji
+                // Hiển thị ảnh thực nếu có URL, local fallback, nếu không dùng emoji
+                val localFoodImg = com.example.a43_kltn_ttfood.ui.util.LocalImageMapper.getFoodImage(foodData.name)
                 if (currentImageUrl.isNotBlank()) {
                     AsyncImage(
                         model = currentImageUrl,
+                        contentDescription = foodData.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (localFoodImg != 0) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = localFoodImg),
                         contentDescription = foodData.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()

@@ -41,6 +41,7 @@ fun CheckoutScreen(
     val authRepo = remember { AuthRepository() }
     val cartRepo = remember { CartRepository() }
     val orderRepo = remember { OrderRepository() }
+    val distanceRepo = remember { DistanceRepository() }
     val coroutineScope = rememberCoroutineScope()
 
     val userId = authRepo.currentFirebaseUser?.uid ?: ""
@@ -57,6 +58,11 @@ fun CheckoutScreen(
     var scheduledTime by remember { mutableStateOf("Hôm nay, 19:00") }
     var showTimeDialog by remember { mutableStateOf(false) }
     
+    var noteText by remember { mutableStateOf("") }
+    var voucherCode by remember { mutableStateOf("") }
+    var appliedVoucher by remember { mutableStateOf<String?>(null) }
+    var voucherError by remember { mutableStateOf(false) }
+    
     var isProcessing by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId) {
@@ -67,8 +73,13 @@ fun CheckoutScreen(
 
     // Calculations
     val subtotal = cartItems.sumOf { it.price * it.quantity }
-    val deliveryFee = if (subtotal > 200000 || subtotal == 0) 0 else 15000
-    val discount = 0 // basic discount
+    var deliveryFee by remember { mutableStateOf(0) }
+    LaunchedEffect(userId) {
+        // Placeholder: calculate delivery fee based on distance (default 5km)
+        val fee = distanceRepo.calculateDeliveryFee(currentAddress, "placeholderRestaurantId")
+        deliveryFee = fee
+    }
+    val discount = if (appliedVoucher == "TTFOOD50") 50000 else 0
     val total = (subtotal + deliveryFee - discount).coerceAtLeast(0)
 
     val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
@@ -148,22 +159,13 @@ fun CheckoutScreen(
                                     },
                                     paymentStatus = if (selectedPayment == "COD") PaymentStatus.PENDING else PaymentStatus.PAID,
                                     status = OrderStatus.PENDING,
-                                    note = ""
+                                    note = noteText,
+                                    voucherId = appliedVoucher ?: "",
+                                    items = cartItems // Assign CartItems directly to Order items
                                 )
-                                val orderItems = cartItems.map { cartItem ->
-                                    OrderItem(
-                                        foodItemId = cartItem.foodId.toString(),
-                                        foodName = cartItem.foodName,
-                                        quantity = cartItem.quantity,
-                                        unitPrice = cartItem.price,
-                                        toppings = emptyList(),
-                                        note = cartItem.toppings
-                                    )
-                                }
-                                val result = orderRepo.placeOrder(order, orderItems)
+                                val result = orderRepo.placeOrder(order)
                                 result.fold(
                                     onSuccess = {
-                                        cartRepo.clearCart(userId)
                                         delay(1000)
                                         isProcessing = false
                                         onNavigateToSuccess()
@@ -180,7 +182,7 @@ fun CheckoutScreen(
                             .weight(1f)
                             .padding(start = 24.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Orange500)
+                        colors = ButtonDefaults.buttonColors(containerColor = GrabGreen)
                     ) {
                         Text("Đặt đơn", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = White)
                     }
@@ -318,6 +320,73 @@ fun CheckoutScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // Note for driver
+            item {
+                Text("📝 Ghi chú cho tài xế", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    placeholder = { Text("Ví dụ: Tới gọi điện, không bấm chuông...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GrabGreen,
+                        unfocusedBorderColor = Gray300
+                    )
+                )
+            }
+
+            // Voucher Section
+            item {
+                Text("🏷️ Khuyến mãi", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = voucherCode,
+                        onValueChange = { 
+                            voucherCode = it
+                            voucherError = false
+                        },
+                        placeholder = { Text("Nhập mã giảm giá") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GrabGreen,
+                            unfocusedBorderColor = Gray300
+                        ),
+                        trailingIcon = {
+                            if (appliedVoucher != null) {
+                                Icon(Icons.Default.CheckCircle, "Đã áp dụng", tint = SuccessGreen)
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Button(
+                        onClick = {
+                            if (voucherCode.uppercase() == "TTFOOD50") {
+                                appliedVoucher = "TTFOOD50"
+                                voucherError = false
+                            } else {
+                                appliedVoucher = null
+                                voucherError = true
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Gray900),
+                        modifier = Modifier.height(56.dp)
+                    ) {
+                        Text("Áp dụng")
+                    }
+                }
+                if (voucherError) {
+                    Text("Mã giảm giá không hợp lệ hoặc đã hết hạn", color = ErrorRed, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
+                } else if (appliedVoucher != null) {
+                    Text("Đã áp dụng mã giảm giá thành công!", color = SuccessGreen, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
                 }
             }
 

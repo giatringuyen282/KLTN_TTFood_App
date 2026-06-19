@@ -243,25 +243,34 @@ class OrderRepository {
     private val db = FirebaseFirestore.getInstance()
     private val ordersCollection = db.collection("orders")
 
-    /**
-     * Tạo đơn hàng mới trong Firestore (bao gồm thêm các món ăn vào subcollection)
-     */
-    suspend fun placeOrder(order: Order, items: List<OrderItem>): Result<String> {
-        return try {
-            val docRef = ordersCollection.document() // Auto-generate order ID
-            val finalOrder = order.copy(id = docRef.id)
-            docRef.set(finalOrder).await()
+    private val cartCollection = db.collection("cart_items")
 
-            // Thêm các món ăn vào subcollection order_items
-            val orderItemsCol = docRef.collection("order_items")
+    /**
+     * Tạo đơn hàng mới trong Firestore (đã lưu sẵn các món ăn trong mảng items của Order)
+     */
+    suspend fun placeOrder(order: Order): Result<String> {
+        return try {
             val batch = db.batch()
-            for (item in items) {
-                val itemRef = orderItemsCol.document()
-                batch.set(itemRef, item.copy(id = itemRef.id))
+            
+            // 1. Create a new Order document reference
+            val orderRef = ordersCollection.document()
+            val newOrder = order.copy(id = orderRef.id)
+            
+            // 2. Add the order to batch
+            batch.set(orderRef, newOrder)
+            
+            // 3. Clear user's cart
+            if (newOrder.userId.isNotBlank()) {
+                val cartItemsQuery = cartCollection.whereEqualTo("userId", newOrder.userId).get().await()
+                cartItemsQuery.documents.forEach { doc ->
+                    batch.delete(doc.reference)
+                }
             }
+            
+            // 4. Commit the batch transaction
             batch.commit().await()
 
-            Result.success(docRef.id)
+            Result.success(newOrder.id)
         } catch (e: Exception) {
             Result.failure(e)
         }

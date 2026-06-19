@@ -140,6 +140,7 @@ data class Order(
     val paymentStatus: String = PaymentStatus.PENDING,
     val deliveryAddress: String = "",            // Snapshot địa chỉ lúc đặt
     val note: String = "",
+    val items: List<CartItem> = emptyList(),     // Lưu trực tiếp các món đã đặt
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
 )

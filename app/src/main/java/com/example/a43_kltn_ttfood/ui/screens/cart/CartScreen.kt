@@ -361,7 +361,24 @@ fun CartItemRow(
                 .background(item.foodBgColor),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = item.foodEmoji, fontSize = 40.sp)
+            val localFoodImg = com.example.a43_kltn_ttfood.ui.util.LocalImageMapper.getFoodImage(item.foodName)
+            if (item.foodImageUrl.isNotBlank()) {
+                coil.compose.AsyncImage(
+                    model = item.foodImageUrl,
+                    contentDescription = item.foodName,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (localFoodImg != 0) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = localFoodImg),
+                    contentDescription = item.foodName,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(text = item.foodEmoji, fontSize = 40.sp)
+            }
         }
         
         Spacer(modifier = Modifier.width(16.dp))

@@ -339,7 +339,7 @@ fun RestaurantDetailScreen(
             FoodDetailBottomSheet(
                 food = selectedFoodForDetail!!,
                 toppingGroups = foodToppingGroups,
-                onAddToCart = { quantity, toppings ->
+                onAddToCart = { quantity, toppings, unitPrice ->
                     val uid = authRepo.currentFirebaseUser?.uid
                     if (uid != null) {
                         coroutineScope.launch {
@@ -347,7 +347,8 @@ fun RestaurantDetailScreen(
                                 userId = uid,
                                 food = selectedFoodForDetail!!,
                                 quantity = quantity,
-                                toppings = toppings
+                                toppings = toppings,
+                                unitPrice = unitPrice
                             )
                             result.fold(
                                 onSuccess = {
@@ -390,12 +391,21 @@ fun RestaurantHeroHeader(restaurant: Restaurant, scrollOffset: Int) {
                 ),
             contentAlignment = Alignment.Center
         ) {
+            val localCover = com.example.a43_kltn_ttfood.ui.util.LocalImageMapper.getRestaurantCover(restaurant.name)
             if (restaurant.coverImage.isNotBlank()) {
                 coil.compose.AsyncImage(
                     model = restaurant.coverImage,
                     contentDescription = null,
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
+                    alpha = 0.85f
+                )
+            } else if (localCover != 0) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = localCover),
+                    contentDescription = restaurant.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     alpha = 0.85f
                 )
             } else {
@@ -456,9 +466,17 @@ fun RestaurantHeroHeader(restaurant: Restaurant, scrollOffset: Int) {
                             .border(2.dp, Gray200, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
+                        val localLogo = com.example.a43_kltn_ttfood.ui.util.LocalImageMapper.getRestaurantLogo(restaurant.name)
                         if (restaurant.logo.isNotBlank()) {
                             coil.compose.AsyncImage(
                                 model = restaurant.logo,
+                                contentDescription = restaurant.name,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else if (localLogo != 0) {
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = localLogo),
                                 contentDescription = restaurant.name,
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
@@ -590,9 +608,17 @@ fun FoodItemHorizontalCard(food: FoodItem, onClick: () -> Unit) {
                     .background(food.bgColor),
                 contentAlignment = Alignment.Center
             ) {
+                val localFoodImg = com.example.a43_kltn_ttfood.ui.util.LocalImageMapper.getFoodImage(food.name)
                 if (food.imageUrl.isNotBlank()) {
                     coil.compose.AsyncImage(
                         model = food.imageUrl,
+                        contentDescription = food.name,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (localFoodImg != 0) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = localFoodImg),
                         contentDescription = food.name,
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -651,7 +677,7 @@ fun FoodItemHorizontalCard(food: FoodItem, onClick: () -> Unit) {
 fun FoodDetailBottomSheet(
     food: FoodItem,
     toppingGroups: List<com.example.a43_kltn_ttfood.data.model.ToppingGroup>,
-    onAddToCart: (Int, String) -> Unit
+    onAddToCart: (Int, String, Int) -> Unit
 ) {
     var quantity by remember { mutableIntStateOf(1) }
     var selectedSize by remember { mutableStateOf("Vừa") }
@@ -690,9 +716,17 @@ fun FoodDetailBottomSheet(
                 .background(food.bgColor),
             contentAlignment = Alignment.Center
         ) {
+            val localFoodImg = com.example.a43_kltn_ttfood.ui.util.LocalImageMapper.getFoodImage(food.name)
             if (food.imageUrl.isNotBlank()) {
                 coil.compose.AsyncImage(
                     model = food.imageUrl,
+                    contentDescription = food.name,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (localFoodImg != 0) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = localFoodImg),
                     contentDescription = food.name,
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -906,11 +940,11 @@ fun FoodDetailBottomSheet(
                 Button(
                     onClick = {
                         val toppingsResult = if (toppingGroups.isNotEmpty()) {
-                            selectedToppings.values.joinToString(", ")
+                            selectedToppings.map { "${it.key}: ${it.value}" }.joinToString("\n")
                         } else {
-                            selectedSize
+                            "Size: $selectedSize"
                         }
-                        onAddToCart(quantity, toppingsResult)
+                        onAddToCart(quantity, toppingsResult, unitPrice)
                     },
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(16.dp),

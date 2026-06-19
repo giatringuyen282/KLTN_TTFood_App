@@ -34,7 +34,7 @@ class CartRepository {
     /**
      * Thêm món ăn vào giỏ hàng trên Firestore
      */
-    suspend fun addToCart(userId: String, food: FoodItem, quantity: Int, toppings: String): Result<Unit> {
+    suspend fun addToCart(userId: String, food: FoodItem, quantity: Int, toppings: String, unitPrice: Int = food.price): Result<Unit> {
         return try {
             // Kiểm tra xem món ăn này đã có trong giỏ hàng với cùng toppings chưa
             val existingQuery = cartCollection
@@ -57,7 +57,7 @@ class CartRepository {
                     foodId = food.id,
                     toppings = toppings,
                     quantity = quantity,
-                    price = food.price,
+                    price = unitPrice,
                     restaurantName = food.restaurant,
                     foodName = food.name,
                     foodEmoji = food.emoji,
