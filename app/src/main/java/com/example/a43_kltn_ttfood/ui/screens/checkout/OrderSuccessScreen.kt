@@ -22,8 +22,9 @@ import com.example.a43_kltn_ttfood.ui.theme.*
 
 @Composable
 fun OrderSuccessScreen(
+    orderId: String,
     onNavigateToHome: () -> Unit = {},
-    onNavigateToTracking: () -> Unit = {}
+    onNavigateToTracking: (String) -> Unit = {}
 ) {
     // Animation states
     var visible by remember { mutableStateOf(false) }
@@ -109,12 +110,12 @@ fun OrderSuccessScreen(
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Mã đơn hàng", color = Gray600)
-                    Text("#TTF892314", fontWeight = FontWeight.Bold, color = Gray900)
+                    Text("#${orderId.takeLast(6).uppercase()}", fontWeight = FontWeight.Bold, color = Gray900)
                 }
                 Divider(color = Gray200)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Thời gian giao (Dự kiến)", color = Gray600)
-                    Text("19:25 - 19:35", fontWeight = FontWeight.Bold, color = Orange500)
+                    Text("19:25 - 19:35", fontWeight = FontWeight.Bold, color = GrabGreen)
                 }
             }
         }
@@ -123,12 +124,12 @@ fun OrderSuccessScreen(
         
         // Buttons
         Button(
-            onClick = onNavigateToTracking,
+            onClick = { onNavigateToTracking(orderId) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Orange500)
+            colors = ButtonDefaults.buttonColors(containerColor = GrabGreen)
         ) {
             Text("Theo dõi đơn hàng", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }

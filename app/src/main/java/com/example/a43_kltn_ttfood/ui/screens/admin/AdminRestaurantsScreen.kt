@@ -94,8 +94,8 @@ fun AdminRestaurantsScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Orange500,
-                    cursorColor = Orange500
+                    focusedBorderColor = GrabGreen,
+                    cursorColor = GrabGreen
                 )
             )
 
@@ -109,7 +109,7 @@ fun AdminRestaurantsScreen(
 
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Orange500)
+                    CircularProgressIndicator(color = GrabGreen)
                 }
             } else if (filteredRestaurants.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -174,7 +174,7 @@ private fun RestaurantAdminCard(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Orange500.copy(alpha = 0.1f)),
+                    .background(GrabGreen.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(restaurant.emoji.ifBlank { "🍽️" }, fontSize = 24.sp)

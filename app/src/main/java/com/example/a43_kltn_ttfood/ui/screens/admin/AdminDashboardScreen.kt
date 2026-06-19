@@ -123,7 +123,7 @@ fun AdminDashboardScreen(
                         icon = Icons.Outlined.ShoppingBag,
                         label = "Tổng đơn",
                         value = "$totalOrders",
-                        colorStart = Orange500,
+                        colorStart = GrabGreen,
                         colorEnd = Red500
                     )
                 }

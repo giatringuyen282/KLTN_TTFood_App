@@ -260,8 +260,8 @@ fun TTFoodNavGraph(navController: NavHostController) {
         composable(route = Screen.Checkout.route) {
             CheckoutScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToSuccess = { 
-                    navController.navigate(Screen.OrderSuccess.route) {
+                onNavigateToSuccess = { orderId ->
+                    navController.navigate(Screen.OrderSuccess.createRoute(orderId)) {
                         popUpTo(Screen.Cart.route) { inclusive = true }
                     }
                 }
@@ -269,15 +269,17 @@ fun TTFoodNavGraph(navController: NavHostController) {
         }
 
         // Order Success Screen
-        composable(route = Screen.OrderSuccess.route) {
+        composable(route = Screen.OrderSuccess.route) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             OrderSuccessScreen(
+                orderId = orderId,
                 onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 },
-                onNavigateToTracking = {
-                    navController.navigate(Screen.OrderTracking.route) {
+                onNavigateToTracking = { trackingOrderId ->
+                    navController.navigate(Screen.OrderTracking.createRoute(trackingOrderId)) {
                         popUpTo(Screen.Home.route)
                     }
                 }
@@ -285,8 +287,10 @@ fun TTFoodNavGraph(navController: NavHostController) {
         }
 
         // Order Tracking Screen
-        composable(route = Screen.OrderTracking.route) {
+        composable(route = Screen.OrderTracking.route) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             OrderTrackingScreen(
+                orderId = orderId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {

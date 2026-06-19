@@ -101,8 +101,8 @@ fun AdminOrdersScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Orange500,
-                    cursorColor = Orange500
+                    focusedBorderColor = GrabGreen,
+                    cursorColor = GrabGreen
                 )
             )
 
@@ -118,7 +118,7 @@ fun AdminOrdersScreen(
                     onClick = { selectedStatusFilter = null },
                     label = { Text("Tất cả") },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Orange500,
+                        selectedContainerColor = GrabGreen,
                         selectedLabelColor = White
                     )
                 )
@@ -138,7 +138,7 @@ fun AdminOrdersScreen(
                         },
                         label = { Text(label) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Orange500,
+                            selectedContainerColor = GrabGreen,
                             selectedLabelColor = White
                         )
                     )
@@ -155,7 +155,7 @@ fun AdminOrdersScreen(
 
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Orange500)
+                    CircularProgressIndicator(color = GrabGreen)
                 }
             } else if (filteredOrders.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -275,7 +275,7 @@ private fun AdminOrderCard(
                 Text(
                     "Tổng tiền: ${String.format("%,d", order.totalAmount)}₫",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Orange500,
+                    color = GrabGreen,
                     fontWeight = FontWeight.Bold
                 )
             }

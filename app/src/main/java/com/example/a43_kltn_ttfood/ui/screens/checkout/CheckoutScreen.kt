@@ -35,7 +35,7 @@ import java.util.Locale
 @Composable
 fun CheckoutScreen(
     onNavigateBack: () -> Unit = {},
-    onNavigateToSuccess: () -> Unit = {}
+    onNavigateToSuccess: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val authRepo = remember { AuthRepository() }
@@ -178,7 +178,7 @@ fun CheckoutScreen(
                                     onSuccess = {
                                         delay(1000)
                                         isProcessing = false
-                                        onNavigateToSuccess()
+                                        onNavigateToSuccess(it)
                                     },
                                     onFailure = { e ->
                                         isProcessing = false

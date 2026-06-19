@@ -75,7 +75,7 @@ fun AdminOrderDetailScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Orange500)
+                CircularProgressIndicator(color = GrabGreen)
             }
             return@Scaffold
         }
@@ -140,7 +140,7 @@ fun AdminOrderDetailScreen(
                             Box {
                                 Button(
                                     onClick = { showStatusMenu = true },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Orange500),
+                                    colors = ButtonDefaults.buttonColors(containerColor = GrabGreen),
                                     shape = RoundedCornerShape(10.dp),
                                     enabled = !isUpdatingStatus
                                 ) {
@@ -227,7 +227,7 @@ fun AdminOrderDetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.LocationOn, null, tint = Orange500)
+                            Icon(Icons.Outlined.LocationOn, null, tint = GrabGreen)
                             Spacer(Modifier.width(8.dp))
                             Text("Địa chỉ giao hàng", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
@@ -284,7 +284,7 @@ fun AdminOrderDetailScreen(
                                     "x${item.quantity}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = Orange500
+                                    color = GrabGreen
                                 )
                             }
 
@@ -360,7 +360,7 @@ fun AdminOrderDetailScreen(
                                 "${String.format("%,d", ord.totalAmount)}₫",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = Orange500
+                                color = GrabGreen
                             )
                         }
                     }

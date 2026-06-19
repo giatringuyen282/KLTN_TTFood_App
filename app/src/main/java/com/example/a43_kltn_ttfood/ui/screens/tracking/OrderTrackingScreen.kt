@@ -25,23 +25,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.a43_kltn_ttfood.ui.theme.*
+import com.example.a43_kltn_ttfood.data.model.OrderStatus
+import com.example.a43_kltn_ttfood.data.repository.OrderRepository
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderTrackingScreen(
+    orderId: String,
     onNavigateBack: () -> Unit = {},
     onNavigateToHome: () -> Unit = {}
 ) {
+    val orderRepo = remember { OrderRepository() }
+    val orderFlow = remember(orderId) { orderRepo.getOrderByIdFlow(orderId) }
+    val order by orderFlow.collectAsState(initial = null)
+
     var currentStep by remember { mutableIntStateOf(0) }
     var etaMinutes by remember { mutableIntStateOf(20) }
 
-    // Real-time Simulation
-    LaunchedEffect(Unit) {
-        while (currentStep < 5) {
-            delay(4000) // 4 seconds per step for demo
-            currentStep++
-            etaMinutes -= 4
+    LaunchedEffect(order) {
+        order?.let {
+            currentStep = when (it.status) {
+                OrderStatus.PENDING -> 0
+                OrderStatus.CONFIRMED -> 1
+                OrderStatus.PREPARING -> 2
+                OrderStatus.PICKING_UP -> 3
+                OrderStatus.DELIVERING -> 4
+                OrderStatus.DELIVERED -> 5
+                OrderStatus.CANCELLED -> -1
+                else -> 0
+            }
         }
     }
 
@@ -91,7 +104,7 @@ fun OrderTrackingScreen(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column {
                                 Text(if (currentStep == 5) "Đã giao hàng" else "Dự kiến giao hàng", color = Gray500, style = MaterialTheme.typography.bodyMedium)
-                                Text(if (currentStep == 5) "Thành công" else "$etaMinutes phút", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = Orange500)
+                                Text(if (currentStep == 5) "Thành công" else "$etaMinutes phút", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = GrabGreen)
                             }
                             Text("Mã: #TTF892314", color = Gray500, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                         }
@@ -153,7 +166,7 @@ fun MockLiveMap(currentStep: Int, modifier: Modifier = Modifier) {
                 .align(Alignment.Center)
                 .fillMaxWidth(0.6f)
                 .height(4.dp)
-                .background(Orange200)
+                .background(GrabGreen.copy(alpha = 0.3f))
         )
         
         // Restaurant Marker (Left)
@@ -316,13 +329,13 @@ fun ReviewBottomSheet(onDismiss: () -> Unit, onSubmit: () -> Unit) {
                         onClick = { if (isSelected) selectedTags.remove(tag) else selectedTags.add(tag) },
                         label = { Text(tag) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Orange50,
-                            selectedLabelColor = Orange500
+                            selectedContainerColor = GrabGreen.copy(alpha = 0.1f),
+                            selectedLabelColor = GrabGreen
                         ),
                         border = FilterChipDefaults.filterChipBorder(
                             enabled = true,
                             selected = isSelected,
-                            borderColor = if (isSelected) Orange500 else Gray300
+                            borderColor = if (isSelected) GrabGreen else Gray300
                         )
                     )
                 }
@@ -337,7 +350,7 @@ fun ReviewBottomSheet(onDismiss: () -> Unit, onSubmit: () -> Unit) {
                 placeholder = { Text("Nhận xét thêm (tùy chọn)...") },
                 modifier = Modifier.fillMaxWidth().height(100.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Orange500)
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GrabGreen)
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -346,7 +359,7 @@ fun ReviewBottomSheet(onDismiss: () -> Unit, onSubmit: () -> Unit) {
                 onClick = onSubmit,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Orange500)
+                colors = ButtonDefaults.buttonColors(containerColor = GrabGreen)
             ) {
                 Text("Gửi đánh giá", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }

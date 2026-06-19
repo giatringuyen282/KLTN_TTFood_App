@@ -59,7 +59,7 @@ fun AdminVouchersScreen(
                 },
                 actions = {
                     IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, "Tạo mới", tint = Orange500)
+                        Icon(Icons.Default.Add, "Tạo mới", tint = GrabGreen)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -83,7 +83,7 @@ fun AdminVouchersScreen(
 
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Orange500)
+                    CircularProgressIndicator(color = GrabGreen)
                 }
             } else if (vouchers.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -94,7 +94,7 @@ fun AdminVouchersScreen(
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = { showCreateDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Orange500),
+                            colors = ButtonDefaults.buttonColors(containerColor = GrabGreen),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(Icons.Default.Add, null)
@@ -164,7 +164,7 @@ private fun VoucherAdminCard(
         ),
         border = BorderStroke(
             1.dp,
-            if (voucher.isActive) Orange500.copy(alpha = 0.3f) else Gray200
+            if (voucher.isActive) GrabGreen.copy(alpha = 0.3f) else Gray200
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -180,7 +180,7 @@ private fun VoucherAdminCard(
                         voucher.code,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (voucher.isActive) Orange500 else Gray400
+                        color = if (voucher.isActive) GrabGreen else Gray400
                     )
                 }
 
@@ -224,7 +224,7 @@ private fun VoucherAdminCard(
                         else "${String.format("%,d", voucher.discountValue)}₫",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Orange500
+                        color = GrabGreen
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -295,7 +295,7 @@ private fun CreateVoucherDialog(
                         label = { Text("Phần trăm (%)") },
                         modifier = Modifier.weight(1f),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Orange500,
+                            selectedContainerColor = GrabGreen,
                             selectedLabelColor = White
                         )
                     )
@@ -305,7 +305,7 @@ private fun CreateVoucherDialog(
                         label = { Text("Số tiền (₫)") },
                         modifier = Modifier.weight(1f),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Orange500,
+                            selectedContainerColor = GrabGreen,
                             selectedLabelColor = White
                         )
                     )
@@ -370,7 +370,7 @@ private fun CreateVoucherDialog(
                         onCreate(voucher)
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Orange500),
+                colors = ButtonDefaults.buttonColors(containerColor = GrabGreen),
                 shape = RoundedCornerShape(10.dp),
                 enabled = code.isNotBlank() && discountValue.isNotBlank()
             ) {

@@ -107,8 +107,8 @@ fun UserManagementScreen(
                 shape = RoundedCornerShape(14.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Orange500,
-                    cursorColor = Orange500
+                    focusedBorderColor = GrabGreen,
+                    cursorColor = GrabGreen
                 )
             )
 
@@ -124,7 +124,7 @@ fun UserManagementScreen(
                     onClick = { selectedRoleFilter = null },
                     label = { Text("Tất cả") },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Orange500,
+                        selectedContainerColor = GrabGreen,
                         selectedLabelColor = White
                     )
                 )
@@ -140,7 +140,7 @@ fun UserManagementScreen(
                         },
                         label = { Text(label) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Orange500,
+                            selectedContainerColor = GrabGreen,
                             selectedLabelColor = White
                         )
                     )
@@ -158,7 +158,7 @@ fun UserManagementScreen(
             // User list
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Orange500)
+                    CircularProgressIndicator(color = GrabGreen)
                 }
             } else if (users.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -390,7 +390,7 @@ fun UserDetailScreen(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Orange500)
+                CircularProgressIndicator(color = GrabGreen)
             }
             return@Scaffold
         }
@@ -415,7 +415,7 @@ fun UserDetailScreen(
                         .fillMaxWidth()
                         .background(
                             brush = Brush.linearGradient(
-                                listOf(Orange500.copy(alpha = 0.1f), Red500.copy(alpha = 0.05f))
+                                listOf(GrabGreen.copy(alpha = 0.1f), Red500.copy(alpha = 0.05f))
                             ),
                             shape = RoundedCornerShape(16.dp)
                         )
@@ -428,14 +428,14 @@ fun UserDetailScreen(
                             modifier = Modifier
                                 .size(72.dp)
                                 .clip(CircleShape)
-                                .background(Orange500.copy(alpha = 0.2f)),
+                                .background(GrabGreen.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 u.fullName.firstOrNull()?.uppercase() ?: "?",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Orange500
+                                color = GrabGreen
                             )
                         }
 
@@ -490,12 +490,12 @@ fun UserDetailScreen(
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = MaterialTheme.colorScheme.background,
-                contentColor = Orange500,
+                contentColor = GrabGreen,
                 indicator = { tabPositions ->
                     if (selectedTab < tabPositions.size) {
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = Orange500
+                            color = GrabGreen
                         )
                     }
                 }
@@ -606,7 +606,7 @@ private fun UserOrdersTab(orders: List<Order>) {
                                 "${String.format("%,d", order.totalAmount)}₫",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Orange500
+                                color = GrabGreen
                             )
                             val statusColor = when (order.status) {
                                 OrderStatus.DELIVERED -> SuccessGreen

@@ -330,6 +330,21 @@ class OrderRepository {
     }
 
     /**
+     * Lấy chi tiết đơn hàng (real-time)
+     */
+    fun getOrderByIdFlow(orderId: String): Flow<Order?> = callbackFlow {
+        val listener = ordersCollection.document(orderId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.toObjectSafe(Order::class.java))
+            }
+        awaitClose { listener.remove() }
+    }
+
+    /**
      * Lấy các món ăn trong đơn hàng (real-time)
      */
     fun getOrderItems(orderId: String): Flow<List<OrderItem>> = callbackFlow {

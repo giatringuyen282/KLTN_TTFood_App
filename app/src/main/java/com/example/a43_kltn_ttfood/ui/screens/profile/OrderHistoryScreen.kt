@@ -1,6 +1,7 @@
 package com.example.a43_kltn_ttfood.ui.screens.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,7 +29,8 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderHistoryScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToTracking: (String) -> Unit = {}
 ) {
     val auth = FirebaseAuth.getInstance()
     val userId = auth.currentUser?.uid ?: ""
@@ -83,7 +85,7 @@ fun OrderHistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(orders, key = { it.id }) { order ->
-                    OrderItemCard(order = order)
+                    OrderItemCard(order = order, onClick = { onNavigateToTracking(order.id) })
                 }
             }
         }
@@ -91,7 +93,7 @@ fun OrderHistoryScreen(
 }
 
 @Composable
-fun OrderItemCard(order: Order) {
+fun OrderItemCard(order: Order, onClick: () -> Unit = {}) {
     val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
     val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     val dateString = order.createdAt?.toDate()?.let { dateFormat.format(it) } ?: "Đang xử lý..."
@@ -119,7 +121,7 @@ fun OrderItemCard(order: Order) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
