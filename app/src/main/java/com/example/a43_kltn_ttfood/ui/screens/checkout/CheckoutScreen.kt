@@ -80,11 +80,15 @@ fun CheckoutScreen(
     // Calculations
     val subtotal = cartItems.sumOf { it.price * it.quantity }
     var deliveryFee by remember { mutableStateOf(0) }
-    LaunchedEffect(userId) {
-        // Placeholder: calculate delivery fee based on distance (default 5km)
-        val fee = distanceRepo.calculateDeliveryFee(currentAddress, "placeholderRestaurantId")
-        deliveryFee = fee
+    
+    // Recalculate fee whenever the address changes
+    LaunchedEffect(currentAddress) {
+        if (currentAddress != "Đang tải địa chỉ...") {
+            val fee = distanceRepo.calculateDeliveryFee(currentAddress, "placeholderRestaurantId")
+            deliveryFee = fee
+        }
     }
+    
     val discount = if (appliedVoucher == "TTFOOD50") 50000 else 0
     val total = (subtotal + deliveryFee - discount).coerceAtLeast(0)
 
@@ -95,7 +99,7 @@ fun CheckoutScreen(
         // Full screen loading
         Box(modifier = Modifier.fillMaxSize().background(White), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator(color = Orange500, modifier = Modifier.size(64.dp), strokeWidth = 6.dp)
+                CircularProgressIndicator(color = GrabGreen, modifier = Modifier.size(64.dp), strokeWidth = 6.dp)
                 Spacer(Modifier.height(24.dp))
                 Text("Đang xử lý đặt đơn...", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = Gray900)
                 Spacer(Modifier.height(8.dp))
