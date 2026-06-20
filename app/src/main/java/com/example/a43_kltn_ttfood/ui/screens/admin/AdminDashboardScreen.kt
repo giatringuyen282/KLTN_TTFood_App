@@ -60,11 +60,38 @@ fun AdminDashboardScreen(
     var totalShippers by remember { mutableIntStateOf(0) }
     var totalOrders by remember { mutableIntStateOf(0) }
 
+    var showChartFor by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         totalUsers = userRepo.getUserCount()
         totalCustomers = userRepo.getUserCountByRole(UserRole.CUSTOMER)
         totalShippers = userRepo.getUserCountByRole(UserRole.SHIPPER)
         totalOrders = orderRepo.getOrderCount()
+    }
+
+    if (showChartFor != null) {
+        AlertDialog(
+            onDismissRequest = { showChartFor = null },
+            title = { Text("Biểu đồ: $showChartFor", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+            text = {
+                // Mock chart data based on selected card
+                val data = when(showChartFor) {
+                    "Tổng users" -> listOf(10f, 20f, 15f, 30f, 25f, 40f, totalUsers.toFloat())
+                    "Tổng đơn" -> listOf(5f, 8f, 12f, 10f, 20f, 18f, totalOrders.toFloat())
+                    "Khách hàng" -> listOf(8f, 18f, 12f, 25f, 20f, 35f, totalCustomers.toFloat())
+                    "Shipper" -> listOf(2f, 2f, 3f, 5f, 5f, 5f, totalShippers.toFloat())
+                    else -> listOf(1f, 2f, 3f)
+                }
+                val labels = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+                SimpleBarChart(data = data, labels = labels)
+            },
+            confirmButton = {
+                TextButton(onClick = { showChartFor = null }) {
+                    Text("Đóng", color = GrabGreen)
+                }
+            },
+            containerColor = White
+        )
     }
 
     Scaffold(
@@ -116,7 +143,8 @@ fun AdminDashboardScreen(
                         label = "Tổng users",
                         value = "$totalUsers",
                         colorStart = Color(0xFF667EEA),
-                        colorEnd = Color(0xFF764BA2)
+                        colorEnd = Color(0xFF764BA2),
+                        onClick = { showChartFor = "Tổng users" }
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
@@ -124,7 +152,8 @@ fun AdminDashboardScreen(
                         label = "Tổng đơn",
                         value = "$totalOrders",
                         colorStart = GrabGreen,
-                        colorEnd = Red500
+                        colorEnd = Red500,
+                        onClick = { showChartFor = "Tổng đơn" }
                     )
                 }
             }
@@ -140,7 +169,8 @@ fun AdminDashboardScreen(
                         label = "Khách hàng",
                         value = "$totalCustomers",
                         colorStart = Color(0xFF11998E),
-                        colorEnd = Color(0xFF38EF7D)
+                        colorEnd = Color(0xFF38EF7D),
+                        onClick = { showChartFor = "Khách hàng" }
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
@@ -148,7 +178,8 @@ fun AdminDashboardScreen(
                         label = "Shipper",
                         value = "$totalShippers",
                         colorStart = Color(0xFFFC5C7D),
-                        colorEnd = Color(0xFF6A82FB)
+                        colorEnd = Color(0xFF6A82FB),
+                        onClick = { showChartFor = "Shipper" }
                     )
                 }
             }
@@ -235,7 +266,8 @@ private fun StatCard(
     label: String,
     value: String,
     colorStart: Color,
-    colorEnd: Color
+    colorEnd: Color,
+    onClick: () -> Unit = {}
 ) {
     Card(
         modifier = modifier,
@@ -249,6 +281,7 @@ private fun StatCard(
                     brush = Brush.linearGradient(listOf(colorStart, colorEnd)),
                     shape = RoundedCornerShape(16.dp)
                 )
+                .clickable { onClick() }
                 .padding(16.dp)
         ) {
             Column {
@@ -329,6 +362,48 @@ private fun AdminMenuItem(
                     .size(20.dp)
                     .graphicsLayer { rotationZ = 180f }
             )
+        }
+    }
+}
+
+@Composable
+fun SimpleBarChart(data: List<Float>, labels: List<String>) {
+    val maxData = data.maxOrNull() ?: 1f
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(top = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        data.forEachIndexed { index, value ->
+            val heightPercent = if (maxData > 0) value / maxData else 0f
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom,
+                modifier = Modifier.weight(1f).fillMaxHeight()
+            ) {
+                Text(
+                    text = value.toInt().toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Gray500
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f)
+                        .fillMaxHeight(heightPercent.coerceAtLeast(0.01f))
+                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                        .background(GrabGreen)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = labels.getOrElse(index) { "" },
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
