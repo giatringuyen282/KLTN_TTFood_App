@@ -60,6 +60,8 @@ fun AdminDashboardScreen(
     var totalShippers by remember { mutableIntStateOf(0) }
     var totalOrders by remember { mutableIntStateOf(0) }
 
+    var totalAdmins by remember { mutableIntStateOf(0) }
+
     var showChartFor by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -67,6 +69,7 @@ fun AdminDashboardScreen(
         totalCustomers = userRepo.getUserCountByRole(UserRole.CUSTOMER)
         totalShippers = userRepo.getUserCountByRole(UserRole.SHIPPER)
         totalOrders = orderRepo.getOrderCount()
+        totalAdmins = userRepo.getUserCountByRole(UserRole.ADMIN)
     }
 
     if (showChartFor != null) {
@@ -74,16 +77,21 @@ fun AdminDashboardScreen(
             onDismissRequest = { showChartFor = null },
             title = { Text("Biểu đồ: $showChartFor", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
             text = {
-                // Mock chart data based on selected card
-                val data = when(showChartFor) {
-                    "Tổng users" -> listOf(10f, 20f, 15f, 30f, 25f, 40f, totalUsers.toFloat())
-                    "Tổng đơn" -> listOf(5f, 8f, 12f, 10f, 20f, 18f, totalOrders.toFloat())
-                    "Khách hàng" -> listOf(8f, 18f, 12f, 25f, 20f, 35f, totalCustomers.toFloat())
-                    "Shipper" -> listOf(2f, 2f, 3f, 5f, 5f, 5f, totalShippers.toFloat())
-                    else -> listOf(1f, 2f, 3f)
+                if (showChartFor == "Tổng users") {
+                    val data = listOf(totalCustomers.toFloat(), totalShippers.toFloat(), totalAdmins.toFloat())
+                    val labels = listOf("Khách hàng", "Shipper", "Admin")
+                    val colors = listOf(Color(0xFF11998E), Color(0xFFFC5C7D), Color(0xFF667EEA))
+                    SimplePieChart(data = data, labels = labels, colors = colors)
+                } else {
+                    val data = when(showChartFor) {
+                        "Tổng đơn" -> listOf(5f, 8f, 12f, 10f, 20f, 18f, totalOrders.toFloat())
+                        "Khách hàng" -> listOf(8f, 18f, 12f, 25f, 20f, 35f, totalCustomers.toFloat())
+                        "Shipper" -> listOf(2f, 2f, 3f, 5f, 5f, 5f, totalShippers.toFloat())
+                        else -> listOf(1f, 2f, 3f)
+                    }
+                    val labels = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+                    SimpleBarChart(data = data, labels = labels)
                 }
-                val labels = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
-                SimpleBarChart(data = data, labels = labels)
             },
             confirmButton = {
                 TextButton(onClick = { showChartFor = null }) {
@@ -95,6 +103,7 @@ fun AdminDashboardScreen(
     }
 
     Scaffold(
+        containerColor = Gray50,
         topBar = {
             TopAppBar(
                 title = {
@@ -117,7 +126,7 @@ fun AdminDashboardScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = White
                 )
             )
         }
@@ -272,7 +281,8 @@ private fun StatCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
             modifier = Modifier
@@ -320,8 +330,9 @@ private fun AdminMenuItem(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+            containerColor = White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -403,6 +414,69 @@ fun SimpleBarChart(data: List<Float>, labels: List<String>) {
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun SimplePieChart(data: List<Float>, labels: List<String>, colors: List<Color>) {
+    val total = data.sum()
+    if (total == 0f) {
+        Text("Chưa có dữ liệu", color = Gray500, modifier = Modifier.padding(16.dp))
+        return
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        // Pie Chart
+        Canvas(modifier = Modifier.size(120.dp)) {
+            var startAngle = -90f
+            data.forEachIndexed { index, value ->
+                if (value > 0) {
+                    val sweepAngle = (value / total) * 360f
+                    drawArc(
+                        color = colors.getOrElse(index) { Color.Gray },
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle,
+                        useCenter = true
+                    )
+                    startAngle += sweepAngle
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.width(24.dp))
+        
+        // Legend
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            data.forEachIndexed { index, value ->
+                if (value > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(colors.getOrElse(index) { Color.Gray })
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = labels.getOrNull(index) ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Gray600
+                            )
+                            Text(
+                                text = value.toInt().toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
         }
     }
