@@ -62,6 +62,9 @@ fun AdminDashboardScreen(
 
     var totalAdmins by remember { mutableIntStateOf(0) }
 
+    var allOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
+    var allUsers by remember { mutableStateOf<List<User>>(emptyList()) }
+
     var showChartFor by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -70,6 +73,17 @@ fun AdminDashboardScreen(
         totalShippers = userRepo.getUserCountByRole(UserRole.SHIPPER)
         totalOrders = orderRepo.getOrderCount()
         totalAdmins = userRepo.getUserCountByRole(UserRole.ADMIN)
+
+        launch {
+            userRepo.getAllUsers().collect { users ->
+                allUsers = users
+            }
+        }
+        launch {
+            orderRepo.getAllOrders().collect { orders ->
+                allOrders = orders
+            }
+        }
     }
 
     if (showChartFor != null) {
@@ -83,11 +97,25 @@ fun AdminDashboardScreen(
                     val colors = listOf(Color(0xFF11998E), Color(0xFFFC5C7D), Color(0xFF667EEA))
                     SimplePieChart(data = data, labels = labels, colors = colors)
                 } else {
+                    val getDayOfWeekData: (List<Timestamp?>) -> List<Float> = { timestamps ->
+                        val counts = FloatArray(7)
+                        val cal = Calendar.getInstance()
+                        timestamps.forEach { ts ->
+                            if (ts != null) {
+                                cal.time = ts.toDate()
+                                val day = cal.get(Calendar.DAY_OF_WEEK)
+                                val index = if (day == Calendar.SUNDAY) 6 else day - 2
+                                counts[index] += 1f
+                            }
+                        }
+                        counts.toList()
+                    }
+
                     val data = when(showChartFor) {
-                        "Tổng đơn" -> listOf(5f, 8f, 12f, 10f, 20f, 18f, totalOrders.toFloat())
-                        "Khách hàng" -> listOf(8f, 18f, 12f, 25f, 20f, 35f, totalCustomers.toFloat())
-                        "Shipper" -> listOf(2f, 2f, 3f, 5f, 5f, 5f, totalShippers.toFloat())
-                        else -> listOf(1f, 2f, 3f)
+                        "Tổng đơn" -> getDayOfWeekData(allOrders.map { it.createdAt })
+                        "Khách hàng" -> getDayOfWeekData(allUsers.filter { it.role == UserRole.CUSTOMER }.map { it.createdAt })
+                        "Shipper" -> getDayOfWeekData(allUsers.filter { it.role == UserRole.SHIPPER }.map { it.createdAt })
+                        else -> listOf(0f, 0f, 0f, 0f, 0f, 0f, 0f)
                     }
                     val labels = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
                     SimpleBarChart(data = data, labels = labels)
