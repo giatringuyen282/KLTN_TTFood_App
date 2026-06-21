@@ -62,6 +62,7 @@ fun HomeScreen(
     onNavigateToBannerDetail: (Int) -> Unit = {}
 ) {
     val authRepo = remember { com.example.a43_kltn_ttfood.data.repository.AuthRepository() }
+    val cartRepo = remember { com.example.a43_kltn_ttfood.data.repository.CartRepository() }
     
     // Initialize repositories
     val categoryRepo = remember { com.example.a43_kltn_ttfood.data.repository.CategoryRepository() }
@@ -99,6 +100,7 @@ fun HomeScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
 
     var address by remember { mutableStateOf("123 Nguyễn Văn Cừ, Q.5, TP.HCM") }
+    var cartItemCount by remember { mutableIntStateOf(0) }
     
     var showAddressDialog by remember { mutableStateOf(false) }
     var tempAddress by remember { mutableStateOf("") }
@@ -163,6 +165,14 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(userProfile) {
+        userProfile?.let { user ->
+            cartRepo.getCart(user.id).collect { items ->
+                cartItemCount = items.sumOf { it.quantity }
+            }
+        }
+    }
+
     Scaffold(
         containerColor = White
     ) { paddingValues ->
@@ -180,9 +190,12 @@ fun HomeScreen(
                         tempAddress = address
                         showAddressDialog = true
                     },
-                    onFavoriteClick = {},
+                    onFavoriteClick = {
+                        android.widget.Toast.makeText(context, "Chức năng Yêu thích đang được phát triển", android.widget.Toast.LENGTH_SHORT).show()
+                    },
                     onCartClick = onNavigateToCart,
-                    onProfileClick = onNavigateToProfile
+                    onProfileClick = onNavigateToProfile,
+                    cartItemCount = cartItemCount
                 )
             }
 
@@ -470,7 +483,8 @@ private fun GrabHeader(
     onAddressClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onCartClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    cartItemCount: Int = 0
 ) {
     Box(
         modifier = Modifier
@@ -529,12 +543,25 @@ private fun GrabHeader(
                     )
                 }
                 IconButton(onClick = onCartClick) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = "Giỏ hàng",
-                        tint = White,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    BadgedBox(
+                        badge = {
+                            if (cartItemCount > 0) {
+                                Badge(
+                                    containerColor = Color.Red,
+                                    contentColor = White
+                                ) {
+                                    Text(text = cartItemCount.toString(), style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Giỏ hàng",
+                            tint = White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
                 IconButton(onClick = onProfileClick) {
                     Icon(
