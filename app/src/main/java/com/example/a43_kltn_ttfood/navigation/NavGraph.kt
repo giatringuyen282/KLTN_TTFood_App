@@ -164,9 +164,14 @@ fun TTFoodNavGraph(navController: NavHostController) {
                     navController.navigate(Screen.Category.createRoute(categoryId)) 
                 },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
-                onNavigateToProfile = { navController.navigate(Screen.ProfileDashboard.route) },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.ProfileDashboard.route)
+                },
                 onNavigateToBannerDetail = { bannerId ->
                     navController.navigate(Screen.BannerDetail.createRoute(bannerId))
+                },
+                onNavigateToFavorites = {
+                    navController.navigate(Screen.Favorites.route)
                 }
             )
         }
@@ -180,6 +185,16 @@ fun TTFoodNavGraph(navController: NavHostController) {
                 },
                 onNavigateToRestaurant = { restaurantId -> 
                     navController.navigate(Screen.RestaurantDetail.createRoute(restaurantId)) 
+                }
+            )
+        }
+
+        // Favorites Screen
+        composable(route = Screen.Favorites.route) {
+            com.example.a43_kltn_ttfood.ui.screens.favorite.FavoriteScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFood = { foodId ->
+                    navController.navigate(Screen.FoodDetail.createRoute(foodId))
                 }
             )
         }

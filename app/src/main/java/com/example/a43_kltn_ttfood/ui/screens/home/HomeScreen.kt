@@ -59,7 +59,8 @@ fun HomeScreen(
     onNavigateToCategory: (Int) -> Unit = {},
     onNavigateToCart: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onNavigateToBannerDetail: (Int) -> Unit = {}
+    onNavigateToBannerDetail: (Int) -> Unit = {},
+    onNavigateToFavorites: () -> Unit = {}
 ) {
     val authRepo = remember { com.example.a43_kltn_ttfood.data.repository.AuthRepository() }
     val cartRepo = remember { com.example.a43_kltn_ttfood.data.repository.CartRepository() }
@@ -190,9 +191,7 @@ fun HomeScreen(
                         tempAddress = address
                         showAddressDialog = true
                     },
-                    onFavoriteClick = {
-                        android.widget.Toast.makeText(context, "Chức năng Yêu thích đang được phát triển", android.widget.Toast.LENGTH_SHORT).show()
-                    },
+                    onFavoriteClick = onNavigateToFavorites,
                     onCartClick = onNavigateToCart,
                     onProfileClick = onNavigateToProfile,
                     cartItemCount = cartItemCount
