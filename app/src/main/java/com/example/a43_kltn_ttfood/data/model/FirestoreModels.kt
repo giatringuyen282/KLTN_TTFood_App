@@ -297,3 +297,17 @@ data class Favorite(
     @ServerTimestamp val createdAt: Timestamp? = null
 )
 
+/**
+ * 📁 reservations collection
+ */
+data class Reservation(
+    @DocumentId val id: String = "",
+    val userId: String = "",
+    val restaurantId: String = "",
+    val restaurantName: String = "",
+    val date: String = "",
+    val time: String = "",
+    val numberOfPeople: Int = 0,
+    val status: String = "pending", // "pending", "confirmed", "cancelled"
+    @ServerTimestamp val createdAt: Timestamp? = null
+)

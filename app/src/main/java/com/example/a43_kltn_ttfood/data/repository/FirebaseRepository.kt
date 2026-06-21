@@ -805,3 +805,34 @@ class FavoriteRepository {
     }
 }
 
+class ReservationRepository {
+    private val db = FirebaseFirestore.getInstance()
+    private val reservationsCollection = db.collection("reservations")
+
+    suspend fun createReservation(
+        userId: String,
+        restaurantId: String,
+        restaurantName: String,
+        date: String,
+        time: String,
+        numberOfPeople: Int
+    ): Result<Unit> {
+        return try {
+            val docRef = reservationsCollection.document()
+            val reservation = Reservation(
+                id = docRef.id,
+                userId = userId,
+                restaurantId = restaurantId,
+                restaurantName = restaurantName,
+                date = date,
+                time = time,
+                numberOfPeople = numberOfPeople
+            )
+            docRef.set(reservation).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+}

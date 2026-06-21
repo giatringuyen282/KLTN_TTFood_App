@@ -63,13 +63,14 @@ fun HomeScreen(
     onNavigateToBannerDetail: (Int) -> Unit = {},
     onNavigateToFavorites: () -> Unit = {}
 ) {
+    // Initialize repositories
+    val restaurantRepo = remember { com.example.a43_kltn_ttfood.data.repository.RestaurantRepository() }
     val authRepo = remember { com.example.a43_kltn_ttfood.data.repository.AuthRepository() }
     val cartRepo = remember { com.example.a43_kltn_ttfood.data.repository.CartRepository() }
+    val reservationRepo = remember { com.example.a43_kltn_ttfood.data.repository.ReservationRepository() }
     
-    // Initialize repositories
     val categoryRepo = remember { com.example.a43_kltn_ttfood.data.repository.CategoryRepository() }
     val foodRepo = remember { com.example.a43_kltn_ttfood.data.repository.FoodRepository() }
-    val restaurantRepo = remember { com.example.a43_kltn_ttfood.data.repository.RestaurantRepository() }
     val dbSeeder = remember { com.example.a43_kltn_ttfood.data.util.DatabaseSeeder }
 
     // State holders for dynamic data
@@ -353,11 +354,35 @@ fun HomeScreen(
                 restaurant = selectedRestaurantForBooking!!,
                 onConfirm = { date, time, people ->
                     showBookingSheet = false
-                    android.widget.Toast.makeText(
-                        context, 
-                        "🎉 Đặt bàn thành công!\n$date lúc $time cho $people người.", 
-                        android.widget.Toast.LENGTH_LONG
-                    ).show()
+                    
+                    userProfile?.id?.let { uid ->
+                        coroutineScope.launch {
+                            val result = reservationRepo.createReservation(
+                                userId = uid,
+                                restaurantId = selectedRestaurantForBooking!!.id,
+                                restaurantName = selectedRestaurantForBooking!!.name,
+                                date = date,
+                                time = time,
+                                numberOfPeople = people
+                            )
+                            
+                            if (result.isSuccess) {
+                                android.widget.Toast.makeText(
+                                    context, 
+                                    "🎉 Đặt bàn thành công!\n$date lúc $time cho $people người.", 
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                android.widget.Toast.makeText(
+                                    context, 
+                                    "❌ Có lỗi xảy ra khi đặt bàn. Vui lòng thử lại.", 
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    } ?: run {
+                        android.widget.Toast.makeText(context, "Vui lòng đăng nhập để đặt bàn", android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 },
                 onCancel = { showBookingSheet = false }
             )
