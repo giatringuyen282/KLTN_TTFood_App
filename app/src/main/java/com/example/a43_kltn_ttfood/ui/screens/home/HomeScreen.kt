@@ -968,6 +968,7 @@ private fun CategorySection(
 // ==============================
 @Composable
 private fun ShortcutTilesSection() {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val tiles = listOf(
         Triple("📍", "Gần tôi", "Nhận ngay"),
         Triple("🍜", "Một Người Ăn", "Bao trọn gói"),
@@ -983,7 +984,14 @@ private fun ShortcutTilesSection() {
             Card(
                 modifier = Modifier
                     .width(150.dp)
-                    .height(100.dp),
+                    .height(100.dp)
+                    .clickable {
+                        android.widget.Toast.makeText(
+                            context,
+                            "Tính năng '$title' đang được phát triển",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
