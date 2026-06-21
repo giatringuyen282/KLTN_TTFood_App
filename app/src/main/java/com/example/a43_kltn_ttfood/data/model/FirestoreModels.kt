@@ -68,6 +68,7 @@ data class RestaurantModel(
     val coverImage: String = "",
     val logo: String = "",
     val emoji: String = "🍽️",
+    val isDineInAvailable: Boolean = false,     // Cho phép đặt bàn/ăn tại chỗ
     @ServerTimestamp val createdAt: Timestamp? = null
 )
 

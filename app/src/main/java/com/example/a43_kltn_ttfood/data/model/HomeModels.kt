@@ -82,10 +82,11 @@ data class Restaurant(
     val distance: String = "",
     val deliveryTime: String = "",
     val badge: String? = null,
-    val colorStart: Color = Color(0xFFFF6B35),
-    val colorEnd: Color = Color(0xFFE53935),
+    val colorStart: Color = Color.Transparent,
+    val colorEnd: Color = Color.Transparent,
     val logo: String = "",
-    val coverImage: String = ""
+    val coverImage: String = "",
+    val isDineInAvailable: Boolean = false
 )
 
 data class ReorderItem(
@@ -128,10 +129,10 @@ val sampleFoodItems = listOf(
 )
 
 val sampleRestaurants = listOf(
-    Restaurant(id = "1", emoji = "🍚🍗", name = "Cơm Gà Mâm Tỏi Chị Đẹp", rating = 4.7f, reviewCount = 1200, distance = "1.5 km", deliveryTime = "27 phút trở lên", badge = "Chỉ có trên Grab", colorStart = Color(0xFFFF6B35), colorEnd = Color(0xFFE53935)),
-    Restaurant(id = "2", emoji = "🍗🔥", name = "Gà Nướng Lu Hoàng Côn Lôn", rating = 4.6f, reviewCount = 950, distance = "1.8 km", deliveryTime = "24 phút trở lên", badge = "Chỉ có trên Grab", colorStart = Color(0xFF7C4DFF), colorEnd = Color(0xFF536DFE)),
-    Restaurant(id = "3", emoji = "🍗🍟", name = "KFC - Đường Lê Văn Sỹ", rating = 4.4f, reviewCount = 8500, distance = "2.0 km", deliveryTime = "26 phút trở lên", badge = null, colorStart = Color(0xFF00BFA5), colorEnd = Color(0xFF1DE9B6)),
-    Restaurant(id = "4", emoji = "🍚🥩", name = "Cơm Tấm Nè - Sườn Nướng", rating = 4.5f, reviewCount = 450, distance = "2.5 km", deliveryTime = "36 phút trở lên", badge = null, colorStart = Color(0xFFE91E63), colorEnd = Color(0xFFFF6090))
+    Restaurant(id = "1", emoji = "🍚🍗", name = "Cơm Gà Mâm Tỏi Chị Đẹp", rating = 4.7f, reviewCount = 1200, distance = "1.5 km", deliveryTime = "27 phút trở lên", badge = "Chỉ có trên Grab", colorStart = Color(0xFFFF6B35), colorEnd = Color(0xFFE53935), isDineInAvailable = true),
+    Restaurant(id = "2", emoji = "🍗🔥", name = "Gà Nướng Lu Hoàng Côn Lôn", rating = 4.6f, reviewCount = 950, distance = "1.8 km", deliveryTime = "24 phút trở lên", badge = "Chỉ có trên Grab", colorStart = Color(0xFF7C4DFF), colorEnd = Color(0xFF536DFE), isDineInAvailable = false),
+    Restaurant(id = "3", emoji = "🍗🍟", name = "KFC - Đường Lê Văn Sỹ", rating = 4.4f, reviewCount = 8500, distance = "2.0 km", deliveryTime = "26 phút trở lên", badge = null, colorStart = Color(0xFF00BFA5), colorEnd = Color(0xFF1DE9B6), isDineInAvailable = true),
+    Restaurant(id = "4", emoji = "🍚🥩", name = "Cơm Tấm Nè - Sườn Nướng", rating = 4.5f, reviewCount = 450, distance = "2.5 km", deliveryTime = "36 phút trở lên", badge = null, colorStart = Color(0xFFE91E63), colorEnd = Color(0xFFFF6090), isDineInAvailable = true)
 )
 
 val sampleReorders = listOf(

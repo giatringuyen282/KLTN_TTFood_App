@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -108,6 +109,10 @@ fun HomeScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Giao hàng, 1 = Đi Ăn Nhà Hàng
 
+    var showBookingSheet by remember { mutableStateOf(false) }
+    var selectedRestaurantForBooking by remember { mutableStateOf<com.example.a43_kltn_ttfood.data.model.Restaurant?>(null) }
+    val bookingSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
     var activeBranchSelectionBrand by remember { mutableStateOf<String?>(null) }
     val branchSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -219,56 +224,88 @@ fun HomeScreen(
                 )
             }
 
-            // ===== DANH MỤC MÓN ĂN =====
-            item {
-                CategorySection(
-                    categories = categories,
-                    onCategoryClick = { cat ->
-                        onNavigateToCategory(cat.id)
-                    }
-                )
-            }
+            if (selectedTab == 0) {
+                // ===== DANH MỤC MÓN ĂN =====
+                item {
+                    CategorySection(
+                        categories = categories,
+                        onCategoryClick = { cat ->
+                            onNavigateToCategory(cat.id)
+                        }
+                    )
+                }
 
-            // ===== SHORTCUT TILES =====
-            item {
-                ShortcutTilesSection()
-            }
+                // ===== SHORTCUT TILES =====
+                item {
+                    ShortcutTilesSection()
+                }
 
-            // ===== MUA NGAY - Deal Banners =====
-            item {
-                SectionHeader(
-                    title = "Mua Ngay",
-                    onViewAll = {}
-                )
-            }
-            item {
-                FoodItemsRow(
-                    foods = foods,
-                    onFoodClick = onNavigateToFood
-                )
-            }
+                // ===== MUA NGAY - Deal Banners =====
+                item {
+                    SectionHeader(
+                        title = "Mua Ngay",
+                        onViewAll = {}
+                    )
+                }
+                item {
+                    FoodItemsRow(
+                        foods = foods,
+                        onFoodClick = onNavigateToFood
+                    )
+                }
 
-            // ===== NHÀ HÀNG NỔI BẬT - Danh sách ngang kiểu GrabFood =====
-            item {
-                SectionHeader(
-                    title = "Nhà hàng nổi tiếng tuần này",
-                    onViewAll = {}
-                )
-            }
+                // ===== NHÀ HÀNG NỔI BẬT - Danh sách ngang kiểu GrabFood =====
+                item {
+                    SectionHeader(
+                        title = "Nhà hàng nổi tiếng tuần này",
+                        onViewAll = {}
+                    )
+                }
 
-
-            // Restaurant list cards (vertical, like GrabFood)
-            items(brandCards) { restaurant ->
-                RestaurantListCard(
-                    restaurant = restaurant,
-                    onClick = {
-                        if (restaurant.id.startsWith("brand_")) {
-                            activeBranchSelectionBrand = restaurant.name
-                        } else {
-                            onNavigateToRestaurant(restaurant.id)
+                // Restaurant list cards (vertical, like GrabFood)
+                items(brandCards) { restaurant ->
+                    RestaurantListCard(
+                        restaurant = restaurant,
+                        onClick = {
+                            if (restaurant.id.startsWith("brand_")) {
+                                activeBranchSelectionBrand = restaurant.name
+                            } else {
+                                onNavigateToRestaurant(restaurant.id)
+                            }
+                        }
+                    )
+                }
+            } else {
+                // ===== ĐI ĂN NHÀ HÀNG TABS =====
+                item {
+                    SectionHeader(
+                        title = "Khám phá Nhà Hàng có chỗ ngồi",
+                        onViewAll = {}
+                    )
+                }
+                
+                val dineInRestaurants = brandCards.filter { it.isDineInAvailable }
+                
+                if (dineInRestaurants.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Chưa có nhà hàng nào hỗ trợ đặt bàn.", color = Gray500)
                         }
                     }
-                )
+                } else {
+                    items(dineInRestaurants) { restaurant ->
+                        DineInRestaurantCard(
+                            restaurant = restaurant,
+                            onBookTable = {
+                                selectedRestaurantForBooking = restaurant
+                                showBookingSheet = true
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -303,6 +340,28 @@ fun HomeScreen(
                 }
             }
         )
+    }
+
+    // Reservation Booking Sheet
+    if (showBookingSheet && selectedRestaurantForBooking != null) {
+        ModalBottomSheet(
+            onDismissRequest = { showBookingSheet = false },
+            sheetState = bookingSheetState,
+            containerColor = White
+        ) {
+            ReservationBottomSheetContent(
+                restaurant = selectedRestaurantForBooking!!,
+                onConfirm = { date, time, people ->
+                    showBookingSheet = false
+                    android.widget.Toast.makeText(
+                        context, 
+                        "🎉 Đặt bàn thành công!\n$date lúc $time cho $people người.", 
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                },
+                onCancel = { showBookingSheet = false }
+            )
+        }
     }
 
     // Branch Selection Bottom Sheet
@@ -1296,5 +1355,180 @@ private fun ShimmerFoodRow() {
                 }
             }
         }
+    }
+}
+
+// ==============================
+// DINE-IN COMPONENTS
+// ==============================
+
+@Composable
+private fun DineInRestaurantCard(
+    restaurant: com.example.a43_kltn_ttfood.data.model.Restaurant,
+    onBookTable: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .background(Brush.horizontalGradient(listOf(restaurant.colorStart, restaurant.colorEnd))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = restaurant.emoji, fontSize = 56.sp)
+                
+                // Rating Badge
+                Row(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(White.copy(alpha = 0.9f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .align(Alignment.TopStart),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Orange500, modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = restaurant.rating.toString(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = restaurant.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Gray500, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Cách bạn ${restaurant.distance}", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Button(
+                    onClick = onBookTable,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrabOrange)
+                ) {
+                    Text("Đặt bàn ngay", color = White, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReservationBottomSheetContent(
+    restaurant: com.example.a43_kltn_ttfood.data.model.Restaurant,
+    onConfirm: (String, String, Int) -> Unit,
+    onCancel: () -> Unit
+) {
+    var selectedDate by remember { mutableStateOf("Hôm nay") }
+    var selectedTime by remember { mutableStateOf("18:00") }
+    var selectedPeople by remember { mutableIntStateOf(2) }
+
+    val dates = listOf("Hôm nay", "Ngày mai", "Ngày mốt")
+    val times = listOf("17:00", "18:00", "19:00", "20:00", "21:00")
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Text(
+            text = "Đặt bàn tại ${restaurant.name}",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Số người
+        Text(text = "Số lượng người", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            IconButton(
+                onClick = { if (selectedPeople > 1) selectedPeople-- },
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(Gray100)
+            ) { Text("−", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Gray700) }
+            Text("$selectedPeople người", style = MaterialTheme.typography.titleMedium)
+            IconButton(
+                onClick = { selectedPeople++ },
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(GrabOrange.copy(alpha = 0.1f))
+            ) { Icon(Icons.Default.Add, "Tăng", tint = GrabOrange) }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Ngày
+        Text(text = "Chọn ngày", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(dates) { date ->
+                FilterChip(
+                    selected = selectedDate == date,
+                    onClick = { selectedDate = date },
+                    label = { Text(date) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = GrabOrange,
+                        selectedLabelColor = White
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Giờ
+        Text(text = "Chọn giờ đến", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(times) { time ->
+                FilterChip(
+                    selected = selectedTime == time,
+                    onClick = { selectedTime = time },
+                    label = { Text(time) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = GrabOrange,
+                        selectedLabelColor = White
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Nút xác nhận
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Hủy", color = Gray700)
+            }
+            Button(
+                onClick = { onConfirm(selectedDate, selectedTime, selectedPeople) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = GrabOrange)
+            ) {
+                Text("Xác nhận", color = White, fontWeight = FontWeight.Bold)
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
