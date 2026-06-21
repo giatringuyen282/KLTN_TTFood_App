@@ -85,7 +85,7 @@ fun SplashScreen(
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(GradientStart, GradientEnd)
+                    colors = listOf(GrabGreen, GrabGreenDark)
                 )
             )
     ) {
