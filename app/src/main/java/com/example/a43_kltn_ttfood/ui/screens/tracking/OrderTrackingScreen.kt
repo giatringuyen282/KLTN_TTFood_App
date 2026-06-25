@@ -46,18 +46,31 @@ fun OrderTrackingScreen(
     var currentStep by remember { mutableIntStateOf(0) }
     var etaMinutes by remember { mutableIntStateOf(20) }
 
+    // Lắng nghe dữ liệu thật từ DB (Tạm thời bỏ qua nếu đang bật chế độ giả lập)
     LaunchedEffect(order) {
-        order?.let {
-            currentStep = when (it.status) {
-                OrderStatus.PENDING -> 0
-                OrderStatus.CONFIRMED -> 1
-                OrderStatus.PREPARING -> 2
-                OrderStatus.PICKING_UP -> 3
-                OrderStatus.DELIVERING -> 4
-                OrderStatus.DELIVERED -> 5
-                OrderStatus.CANCELLED -> -1
-                else -> 0
+        if (currentStep == 0) { // Chỉ gán lần đầu
+            order?.let {
+                currentStep = when (it.status) {
+                    OrderStatus.PENDING -> 0
+                    OrderStatus.CONFIRMED -> 1
+                    OrderStatus.PREPARING -> 2
+                    OrderStatus.PICKING_UP -> 3
+                    OrderStatus.DELIVERING -> 4
+                    OrderStatus.DELIVERED -> 5
+                    OrderStatus.CANCELLED -> -1
+                    else -> 0
+                }
             }
+        }
+    }
+
+    // Chế độ chạy ảo (Virtual Simulation) tự động nhảy trạng thái sau mỗi 4 giây
+    LaunchedEffect(Unit) {
+        delay(2000) // Đợi 2 giây ban đầu
+        while (currentStep < 5 && currentStep >= 0) {
+            delay(4000)
+            currentStep++
+            etaMinutes = maxOf(0, etaMinutes - 4)
         }
     }
 
