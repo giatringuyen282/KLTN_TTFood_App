@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.sp
 import com.example.a43_kltn_ttfood.ui.theme.*
 import com.example.a43_kltn_ttfood.data.model.OrderStatus
 import com.example.a43_kltn_ttfood.data.repository.OrderRepository
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,49 +148,51 @@ fun OrderTrackingScreen(
 
 @Composable
 fun MockLiveMap(currentStep: Int, modifier: Modifier = Modifier) {
-    // Animating shipper position
-    val progress by animateFloatAsState(
-        targetValue = currentStep / 5f,
-        animationSpec = tween(1000, easing = LinearEasing),
-        label = "Shipper Position"
-    )
+    val restaurantLatLng = LatLng(10.762622, 106.660172)
+    val userLatLng = LatLng(10.7599, 106.6823)
+    
+    val cameraPositionState = rememberCameraPositionState {
+        // Center camera between restaurant and user
+        position = CameraPosition.fromLatLngZoom(
+            LatLng((restaurantLatLng.latitude + userLatLng.latitude) / 2,
+                   (restaurantLatLng.longitude + userLatLng.longitude) / 2), 
+            13f
+        )
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(Gray200)
     ) {
-        // Mock Map Grid Pattern
-        Text("🗺️ Map API Placeholder", modifier = Modifier.align(Alignment.Center).padding(16.dp), color = Gray500, fontSize = 18.sp)
-        
-        // Mock Route Line
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth(0.6f)
-                .height(4.dp)
-                .background(GrabGreen.copy(alpha = 0.3f))
-        )
-        
-        // Restaurant Marker (Left)
-        Box(modifier = Modifier.align(Alignment.CenterStart).padding(start = 40.dp)) {
-            Text("🏪", fontSize = 32.sp)
-        }
-        
-        // User Marker (Right)
-        Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 40.dp)) {
-            Text("📍", fontSize = 32.sp)
-        }
-        
-        // Shipper Moving Marker
-        if (currentStep >= 3) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 40.dp + (progress * 220).dp, bottom = 20.dp) // Simulated movement
-            ) {
-                Text("🛵", fontSize = 36.sp)
-            }
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = false,
+                myLocationButtonEnabled = false,
+                scrollGesturesEnabled = false,
+                zoomGesturesEnabled = false,
+                tiltGesturesEnabled = false,
+                rotationGesturesEnabled = false,
+                mapToolbarEnabled = false
+            )
+        ) {
+            Marker(
+                state = MarkerState(position = restaurantLatLng),
+                title = "Nhà hàng",
+                snippet = "Đang chuẩn bị món"
+            )
+            Marker(
+                state = MarkerState(position = userLatLng),
+                title = "Điểm giao",
+                snippet = "Vị trí của bạn"
+            )
+            Polyline(
+                points = listOf(restaurantLatLng, userLatLng),
+                color = GrabGreen,
+                width = 8f
+            )
         }
     }
 }
