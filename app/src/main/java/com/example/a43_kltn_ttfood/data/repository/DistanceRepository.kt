@@ -9,8 +9,7 @@ class DistanceRepository {
     private val db = FirebaseFirestore.getInstance()
     private val restaurantsCollection = db.collection("restaurants")
 
-    // TODO: Thay bằng Google Maps API Key thực tế từ Google Cloud Console (bật Distance Matrix API)
-    private val MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+    private val MAPS_API_KEY = "AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao"
 
     /**
      * Calculate delivery fee using Google Maps API.

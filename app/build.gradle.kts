@@ -79,6 +79,11 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation("com.google.firebase:firebase-analytics")
 
+    // Google Maps & Location
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.maps.compose)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

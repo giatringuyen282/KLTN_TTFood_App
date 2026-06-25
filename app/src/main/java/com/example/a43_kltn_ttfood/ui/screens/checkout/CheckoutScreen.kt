@@ -54,6 +54,7 @@ fun CheckoutScreen(
     var currentAddress by remember { mutableStateOf("Đang tải địa chỉ...") }
     var tempAddress by remember { mutableStateOf("") }
     var showAddressDialog by remember { mutableStateOf(false) }
+    var showMapDialog by remember { mutableStateOf(false) }
     
     var scheduledTime by remember { mutableStateOf("Hôm nay, 19:00") }
     var showTimeDialog by remember { mutableStateOf(false) }
@@ -189,10 +190,11 @@ fun CheckoutScreen(
                                 .fillMaxWidth()
                                 .height(120.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Gray200),
+                                .background(Gray200)
+                                .clickable { showMapDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("🗺️ Bản đồ Preview", color = Gray500)
+                            Text("🗺️ Nhấn để mở Bản đồ & Định vị", color = Gray500)
                             Icon(Icons.Default.LocationOn, "Vị trí", tint = ErrorRed, modifier = Modifier.size(40.dp))
                         }
                         
@@ -225,7 +227,7 @@ fun CheckoutScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            TextButton(onClick = { /* Mở GPS */ }) {
+                            TextButton(onClick = { showMapDialog = true }) {
                                 Text("📍 Định vị hiện tại", color = InfoBlue)
                             }
                             TextButton(onClick = { 
@@ -452,6 +454,18 @@ fun CheckoutScreen(
             // Bottom Padding Space
             item { Spacer(modifier = Modifier.height(24.dp)) }
         }
+    }
+
+    // Map Selection Dialog
+    if (showMapDialog) {
+        MapSelectionDialog(
+            initialAddress = currentAddress,
+            onDismiss = { showMapDialog = false },
+            onAddressSelected = { selectedAddress ->
+                currentAddress = selectedAddress
+                showMapDialog = false
+            }
+        )
     }
 
     // Address Dialog
