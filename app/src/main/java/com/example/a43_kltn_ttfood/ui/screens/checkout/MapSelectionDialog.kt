@@ -198,7 +198,6 @@ fun MapSelectionDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // GPS locate button
                             OutlinedButton(
                                 onClick = {
                                     requestPermissionLauncher.launch(
@@ -209,11 +208,12 @@ fun MapSelectionDialog(
                                     )
                                 },
                                 shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.weight(1f)
+                                contentPadding = PaddingValues(horizontal = 8.dp),
+                                modifier = Modifier.weight(1.2f)
                             ) {
                                 Icon(Icons.Default.MyLocation, contentDescription = "GPS")
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Định vị")
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Định vị", maxLines = 1, softWrap = false)
                             }
 
                             Button(
@@ -226,9 +226,9 @@ fun MapSelectionDialog(
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = GrabGreen),
-                                modifier = Modifier.weight(2.5f)
+                                modifier = Modifier.weight(2f)
                             ) {
-                                Text("Xác nhận vị trí", color = Color.White)
+                                Text("Xác nhận vị trí", color = Color.White, maxLines = 1, softWrap = false)
                             }
                         }
                     }
