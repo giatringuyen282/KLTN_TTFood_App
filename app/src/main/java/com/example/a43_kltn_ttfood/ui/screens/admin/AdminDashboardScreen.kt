@@ -148,11 +148,7 @@ fun AdminDashboardScreen(
                         )
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại", tint = Color(0xFF0F172A))
-                    }
-                },
+                // No navigation icon needed on main dashboard
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFFF8FAFC)
                 )
@@ -286,16 +282,6 @@ fun AdminDashboardScreen(
                 )
             }
 
-            item {
-                AdminMenuItem(
-                    icon = Icons.Outlined.Image,
-                    title = "Ảnh hệ thống",
-                    subtitle = "Upload ảnh lên Firebase Storage",
-                    iconContainerColor = Color(0xFFFAF5FF),
-                    iconColor = Color(0xFF9333EA),
-                    onClick = onNavigateToUploadImage
-                )
-            }
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
         }
