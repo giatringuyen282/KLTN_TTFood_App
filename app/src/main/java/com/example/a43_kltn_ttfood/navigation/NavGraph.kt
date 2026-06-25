@@ -70,6 +70,11 @@ fun TTFoodNavGraph(navController: NavHostController) {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
+                },
+                onNavigateToAdmin = {
+                    navController.navigate(Screen.AdminDashboard.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -94,8 +99,9 @@ fun TTFoodNavGraph(navController: NavHostController) {
                 onNavigateToForgotPassword = {
                     navController.navigate(Screen.ResetPassword.route)
                 },
-                onLoginSuccess = {
-                    navController.navigate(Screen.Home.route) {
+                onLoginSuccess = { role ->
+                    val destination = if (role == "admin") Screen.AdminDashboard.route else Screen.Home.route
+                    navController.navigate(destination) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 }

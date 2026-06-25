@@ -38,7 +38,8 @@ import androidx.compose.ui.graphics.Shadow
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToHome: () -> Unit,
+    onNavigateToAdmin: () -> Unit
 ) {
     // Animation states
     val logoScale = remember { Animatable(0.3f) }
@@ -73,7 +74,12 @@ fun SplashScreen(
         // Kiểm tra xem người dùng đã đăng nhập chưa
         val authRepo = AuthRepository()
         if (authRepo.isLoggedIn) {
-            onNavigateToHome()
+            val userProfile = authRepo.getCurrentUserProfile()
+            if (userProfile?.role == "admin") {
+                onNavigateToAdmin()
+            } else {
+                onNavigateToHome()
+            }
         } else {
             onNavigateToOnboarding()
         }

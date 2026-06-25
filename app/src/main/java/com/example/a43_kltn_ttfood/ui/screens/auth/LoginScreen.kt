@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToForgotPassword: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: (String) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
@@ -224,8 +224,8 @@ fun LoginScreen(
                             isLoading = false
 
                             result.fold(
-                                onSuccess = {
-                                    onLoginSuccess()
+                                onSuccess = { user ->
+                                    onLoginSuccess(user.role)
                                 },
                                 onFailure = { error ->
                                     loginErrorMessage = if (error.message == "EMAIL_NOT_VERIFIED") {

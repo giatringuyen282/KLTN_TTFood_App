@@ -18,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -131,30 +130,31 @@ fun AdminDashboardScreen(
     }
 
     Scaffold(
-        containerColor = Gray50,
+        containerColor = Color(0xFFF8FAFC), // Nhạt hơn Gray50 một chút
         topBar = {
             TopAppBar(
                 title = {
                     Column {
                         Text(
-                            "🛠️ Quản trị viên",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            "Dashboard",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF0F172A)
                         )
                         Text(
-                            "TTFood Admin Dashboard",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Gray500
+                            "Xin chào, Quản trị viên 👋",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF64748B)
                         )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại", tint = Color(0xFF0F172A))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = White
+                    containerColor = Color(0xFFF8FAFC)
                 )
             )
         }
@@ -172,15 +172,15 @@ fun AdminDashboardScreen(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Outlined.People,
                         label = "Tổng users",
                         value = "$totalUsers",
-                        colorStart = Color(0xFF667EEA),
-                        colorEnd = Color(0xFF764BA2),
+                        containerColor = Color(0xFFEFF6FF),
+                        contentColor = Color(0xFF2563EB),
                         onClick = { showChartFor = "Tổng users" }
                     )
                     StatCard(
@@ -188,8 +188,8 @@ fun AdminDashboardScreen(
                         icon = Icons.Outlined.ShoppingBag,
                         label = "Tổng đơn",
                         value = "$totalOrders",
-                        colorStart = GrabGreen,
-                        colorEnd = Red500,
+                        containerColor = Color(0xFFFFF7ED),
+                        contentColor = Color(0xFFEA580C),
                         onClick = { showChartFor = "Tổng đơn" }
                     )
                 }
@@ -198,15 +198,15 @@ fun AdminDashboardScreen(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Outlined.Person,
                         label = "Khách hàng",
                         value = "$totalCustomers",
-                        colorStart = Color(0xFF11998E),
-                        colorEnd = Color(0xFF38EF7D),
+                        containerColor = Color(0xFFF0FDF4),
+                        contentColor = Color(0xFF16A34A),
                         onClick = { showChartFor = "Khách hàng" }
                     )
                     StatCard(
@@ -214,8 +214,8 @@ fun AdminDashboardScreen(
                         icon = Icons.Outlined.DeliveryDining,
                         label = "Shipper",
                         value = "$totalShippers",
-                        colorStart = Color(0xFFFC5C7D),
-                        colorEnd = Color(0xFF6A82FB),
+                        containerColor = Color(0xFFFAF5FF),
+                        contentColor = Color(0xFF9333EA),
                         onClick = { showChartFor = "Shipper" }
                     )
                 }
@@ -235,8 +235,9 @@ fun AdminDashboardScreen(
                 AdminMenuItem(
                     icon = Icons.Outlined.People,
                     title = "Quản lý Người dùng",
-                    subtitle = "Xem, tìm kiếm, block/unblock tài khoản",
-                    color = Color(0xFF667EEA),
+                    subtitle = "Xem, tìm kiếm, khóa tài khoản",
+                    iconContainerColor = Color(0xFFEFF6FF),
+                    iconColor = Color(0xFF2563EB),
                     onClick = onNavigateToUsers
                 )
             }
@@ -246,7 +247,8 @@ fun AdminDashboardScreen(
                     icon = Icons.Outlined.Receipt,
                     title = "Quản lý Đơn hàng",
                     subtitle = "Xem, cập nhật trạng thái đơn hàng",
-                    color = Orange500,
+                    iconContainerColor = Color(0xFFFFF7ED),
+                    iconColor = Color(0xFFEA580C),
                     onClick = onNavigateToOrders
                 )
             }
@@ -256,7 +258,8 @@ fun AdminDashboardScreen(
                     icon = Icons.Outlined.Store,
                     title = "Quản lý Nhà hàng",
                     subtitle = "Thêm, sửa, xóa nhà hàng đối tác",
-                    color = Color(0xFF11998E),
+                    iconContainerColor = Color(0xFFF0FDF4),
+                    iconColor = Color(0xFF16A34A),
                     onClick = onNavigateToRestaurants
                 )
             }
@@ -266,7 +269,8 @@ fun AdminDashboardScreen(
                     icon = Icons.Outlined.LocalOffer,
                     title = "Voucher & Khuyến mãi",
                     subtitle = "Tạo mã giảm giá, theo dõi hiệu quả",
-                    color = Color(0xFFFC5C7D),
+                    iconContainerColor = Color(0xFFFEF2F2),
+                    iconColor = Color(0xFFDC2626),
                     onClick = onNavigateToVouchers
                 )
             }
@@ -275,8 +279,9 @@ fun AdminDashboardScreen(
                 AdminMenuItem(
                     icon = Icons.Outlined.History,
                     title = "Lịch sử hoạt động",
-                    subtitle = "Audit log — ai đã làm gì, khi nào",
-                    color = Color(0xFFFF8F00),
+                    subtitle = "Xem lại các thay đổi trên hệ thống",
+                    iconContainerColor = Color(0xFFFFFBEB),
+                    iconColor = Color(0xFFD97706),
                     onClick = onNavigateToAuditLog
                 )
             }
@@ -284,9 +289,10 @@ fun AdminDashboardScreen(
             item {
                 AdminMenuItem(
                     icon = Icons.Outlined.Image,
-                    title = "Ảnh món ăn",
+                    title = "Ảnh hệ thống",
                     subtitle = "Upload ảnh lên Firebase Storage",
-                    color = Color(0xFF6C63FF),
+                    iconContainerColor = Color(0xFFFAF5FF),
+                    iconColor = Color(0xFF9333EA),
                     onClick = onNavigateToUploadImage
                 )
             }
@@ -302,45 +308,42 @@ private fun StatCard(
     icon: ImageVector,
     label: String,
     value: String,
-    colorStart: Color,
-    colorEnd: Color,
+    containerColor: Color,
+    contentColor: Color,
     onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(listOf(colorStart, colorEnd)),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .clickable { onClick() }
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
-            Column {
-                Icon(
-                    icon, null,
-                    tint = White.copy(alpha = 0.8f),
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    value,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = White
-                )
-                Text(
-                    label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = White.copy(alpha = 0.8f)
-                )
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(White.copy(alpha = 0.6f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = contentColor, modifier = Modifier.size(24.dp))
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = contentColor
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = contentColor.copy(alpha = 0.8f)
+            )
         }
     }
 }
@@ -350,17 +353,16 @@ private fun AdminMenuItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    color: Color,
+    iconContainerColor: Color,
+    iconColor: Color,
     onClick: () -> Unit
 ) {
-    Card(
+    Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = White
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(20.dp),
+        color = White,
+        shadowElevation = 2.dp
     ) {
         Row(
             modifier = Modifier
@@ -370,12 +372,12 @@ private fun AdminMenuItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(color.copy(alpha = 0.15f)),
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(iconContainerColor),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
+                Icon(icon, null, tint = iconColor, modifier = Modifier.size(26.dp))
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -383,23 +385,22 @@ private fun AdminMenuItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E293B)
                 )
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Gray500
+                    color = Color(0xFF64748B)
                 )
             }
 
             Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                null,
-                tint = Gray400,
-                modifier = Modifier
-                    .size(20.dp)
-                    .graphicsLayer { rotationZ = 180f }
+                Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Color(0xFFCBD5E1),
+                modifier = Modifier.size(20.dp)
             )
         }
     }

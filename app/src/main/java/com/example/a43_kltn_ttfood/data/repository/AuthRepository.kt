@@ -58,7 +58,7 @@ class AuthRepository {
             // Kiểm tra tài khoản có bị khóa không
             if (!user.isActive) {
                 auth.signOut()
-                return Result.failure(Exception("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ."))
+                return Result.failure(Exception("Tài khoản của bạn đã bị vô hiệu hóa"))
             }
 
             // Ghi audit log: đăng nhập thành công
