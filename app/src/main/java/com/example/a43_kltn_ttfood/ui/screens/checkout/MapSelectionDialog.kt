@@ -39,7 +39,7 @@ import java.util.Locale
 fun MapSelectionDialog(
     initialAddress: String,
     onDismiss: () -> Unit,
-    onAddressSelected: (String) -> Unit
+    onAddressSelected: (String, LatLng) -> Unit
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -216,11 +216,10 @@ fun MapSelectionDialog(
                                 Text("Định vị")
                             }
 
-                            // Confirm location button
                             Button(
                                 onClick = {
                                     if (selectedAddressText.isNotBlank()) {
-                                        onAddressSelected(selectedAddressText)
+                                        onAddressSelected(selectedAddressText, currentLatLng)
                                     } else {
                                         Toast.makeText(context, "Không thể lấy địa chỉ ở vị trí này!", Toast.LENGTH_SHORT).show()
                                     }

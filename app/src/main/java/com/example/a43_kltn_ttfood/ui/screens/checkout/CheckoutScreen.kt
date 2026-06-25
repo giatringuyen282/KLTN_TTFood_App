@@ -26,6 +26,9 @@ import androidx.compose.ui.unit.sp
 import com.example.a43_kltn_ttfood.data.model.*
 import com.example.a43_kltn_ttfood.data.repository.*
 import com.example.a43_kltn_ttfood.ui.theme.*
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -55,6 +58,7 @@ fun CheckoutScreen(
     var tempAddress by remember { mutableStateOf("") }
     var showAddressDialog by remember { mutableStateOf(false) }
     var showMapDialog by remember { mutableStateOf(false) }
+    var selectedLatLng by remember { mutableStateOf(LatLng(10.7599, 106.6823)) }
     
     var scheduledTime by remember { mutableStateOf("Hôm nay, 19:00") }
     var showTimeDialog by remember { mutableStateOf(false) }
@@ -185,17 +189,60 @@ fun CheckoutScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        // Mini Google Map preview
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(120.dp)
+                                .height(140.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Gray200)
-                                .clickable { showMapDialog = true },
-                            contentAlignment = Alignment.Center
+                                .clickable { showMapDialog = true }
                         ) {
-                            Text("🗺️ Nhấn để mở Bản đồ & Định vị", color = Gray500)
-                            Icon(Icons.Default.LocationOn, "Vị trí", tint = ErrorRed, modifier = Modifier.size(40.dp))
+                            val miniCameraState = rememberCameraPositionState {
+                                position = CameraPosition.fromLatLngZoom(selectedLatLng, 15f)
+                            }
+                            // Sync camera when selectedLatLng changes
+                            LaunchedEffect(selectedLatLng) {
+                                miniCameraState.position = CameraPosition.fromLatLngZoom(selectedLatLng, 15f)
+                            }
+                            GoogleMap(
+                                modifier = Modifier.fillMaxSize(),
+                                cameraPositionState = miniCameraState,
+                                uiSettings = MapUiSettings(
+                                    zoomControlsEnabled = false,
+                                    myLocationButtonEnabled = false,
+                                    scrollGesturesEnabled = false,
+                                    zoomGesturesEnabled = false,
+                                    tiltGesturesEnabled = false,
+                                    rotationGesturesEnabled = false,
+                                    mapToolbarEnabled = false
+                                )
+                            ) {
+                                Marker(
+                                    state = MarkerState(position = selectedLatLng),
+                                    title = "Vị trí giao hàng"
+                                )
+                            }
+                            // Overlay tap hint
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.08f)),
+                                contentAlignment = Alignment.BottomCenter
+                            ) {
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "📍 Nhấn để thay đổi vị trí",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = GrabGreen,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -461,8 +508,9 @@ fun CheckoutScreen(
         MapSelectionDialog(
             initialAddress = currentAddress,
             onDismiss = { showMapDialog = false },
-            onAddressSelected = { selectedAddress ->
+            onAddressSelected = { selectedAddress, latLng ->
                 currentAddress = selectedAddress
+                selectedLatLng = latLng
                 showMapDialog = false
             }
         )
