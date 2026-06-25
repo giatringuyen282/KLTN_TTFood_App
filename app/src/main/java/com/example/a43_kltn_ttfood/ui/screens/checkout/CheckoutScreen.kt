@@ -64,6 +64,7 @@ fun CheckoutScreen(
     var voucherError by remember { mutableStateOf(false) }
     
     var isProcessing by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId) {
         if (userId.isNotBlank()) {
@@ -150,42 +151,7 @@ fun CheckoutScreen(
                                 Toast.makeText(context, "Giỏ hàng trống, không thể đặt hàng", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
-                            isProcessing = true
-                            coroutineScope.launch {
-                                val order = Order(
-                                    userId = userId,
-                                    restaurantId = cartItems.firstOrNull()?.restaurantName ?: "TTFood Partner",
-                                    deliveryAddress = currentAddress,
-                                    subtotal = subtotal,
-                                    deliveryFee = deliveryFee,
-                                    discount = discount,
-                                    totalAmount = total,
-                                    paymentMethod = when (selectedPayment) {
-                                        "MoMo" -> PaymentMethod.MOMO
-                                        "ZaloPay" -> PaymentMethod.ZALOPAY
-                                        "VNPay" -> PaymentMethod.VNPAY
-                                        "Card" -> PaymentMethod.CARD
-                                        else -> PaymentMethod.COD
-                                    },
-                                    paymentStatus = if (selectedPayment == "COD") PaymentStatus.PENDING else PaymentStatus.PAID,
-                                    status = OrderStatus.PENDING,
-                                    note = noteText,
-                                    voucherId = appliedVoucher ?: "",
-                                    items = cartItems // Assign CartItems directly to Order items
-                                )
-                                val result = orderRepo.placeOrder(order)
-                                result.fold(
-                                    onSuccess = {
-                                        delay(1000)
-                                        isProcessing = false
-                                        onNavigateToSuccess(it)
-                                    },
-                                    onFailure = { e ->
-                                        isProcessing = false
-                                        Toast.makeText(context, "❌ Đặt hàng thất bại: ${e.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                )
-                            }
+                            showConfirmDialog = true
                         },
                         modifier = Modifier
                             .height(56.dp)
@@ -546,6 +512,203 @@ fun CheckoutScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showTimeDialog = false }) { Text("Đóng", color = Gray500) }
+            }
+        )
+    }
+
+    // ==============================
+    // ORDER CONFIRMATION DIALOG (ShopeeFood style)
+    // ==============================
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = White,
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(GrabGreen.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🛵", fontSize = 32.sp)
+                }
+            },
+            title = {
+                Text(
+                    text = "Xác nhận đặt đơn",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Gray900
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Vui lòng kiểm tra lại thông tin đơn hàng trước khi xác nhận:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Gray600
+                    )
+
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Gray50),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // Address
+                            Row(verticalAlignment = Alignment.Top) {
+                                Text("📍", fontSize = 16.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text("Giao đến", style = MaterialTheme.typography.labelSmall, color = Gray500)
+                                    Text(
+                                        text = currentAddress,
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = Gray900,
+                                        maxLines = 2
+                                    )
+                                }
+                            }
+
+                            Divider(color = Gray200)
+
+                            // Items count
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🛍️", fontSize = 16.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "${cartItems.size} món · ${cartItems.sumOf { it.quantity }} phần",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = Gray900
+                                )
+                            }
+
+                            // Payment method
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = when (selectedPayment) {
+                                        "MoMo" -> "💜"
+                                        "ZaloPay" -> "🔵"
+                                        "VNPay" -> "🔴"
+                                        "Card" -> "💳"
+                                        else -> "💵"
+                                    },
+                                    fontSize = 16.sp
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = when (selectedPayment) {
+                                        "MoMo" -> "Ví MoMo"
+                                        "ZaloPay" -> "Ví ZaloPay"
+                                        "VNPay" -> "VNPay QR"
+                                        "Card" -> "Thẻ tín dụng"
+                                        else -> "Tiền mặt (COD)"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = Gray900
+                                )
+                            }
+
+                            // Delivery time
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🕐", fontSize = 16.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = if (selectedTime == "Giao ngay") "Giao ngay (20-30 phút)" else scheduledTime,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = Gray900
+                                )
+                            }
+
+                            Divider(color = Gray200)
+
+                            // Total
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Tổng thanh toán",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Gray900
+                                )
+                                Text(
+                                    text = formatPrice(total),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Orange500
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmDialog = false
+                        isProcessing = true
+                        coroutineScope.launch {
+                            val order = Order(
+                                userId = userId,
+                                restaurantId = cartItems.firstOrNull()?.restaurantName ?: "TTFood Partner",
+                                deliveryAddress = currentAddress,
+                                subtotal = subtotal,
+                                deliveryFee = deliveryFee,
+                                discount = discount,
+                                totalAmount = total,
+                                paymentMethod = when (selectedPayment) {
+                                    "MoMo" -> PaymentMethod.MOMO
+                                    "ZaloPay" -> PaymentMethod.ZALOPAY
+                                    "VNPay" -> PaymentMethod.VNPAY
+                                    "Card" -> PaymentMethod.CARD
+                                    else -> PaymentMethod.COD
+                                },
+                                paymentStatus = if (selectedPayment == "COD") PaymentStatus.PENDING else PaymentStatus.PAID,
+                                status = OrderStatus.PENDING,
+                                note = noteText,
+                                voucherId = appliedVoucher ?: "",
+                                items = cartItems
+                            )
+                            val result = orderRepo.placeOrder(order)
+                            result.fold(
+                                onSuccess = {
+                                    delay(1000)
+                                    isProcessing = false
+                                    onNavigateToSuccess(it)
+                                },
+                                onFailure = { e ->
+                                    isProcessing = false
+                                    Toast.makeText(context, "❌ Đặt hàng thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GrabGreen)
+                ) {
+                    Text("✅ Xác nhận đặt đơn", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = White)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showConfirmDialog = false },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Gray600),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Gray300)
+                ) {
+                    Text("Quay lại kiểm tra", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
             }
         )
     }
